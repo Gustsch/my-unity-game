@@ -14,7 +14,15 @@ namespace KnightRun.Gameplay
         bool isDead;
         bool isKnockedDown;
         float knockdownTimer;
+        int maxHealth;
+        float currentHealth;
+        int damage;
 
+        public int MaxHealth => maxHealth;
+        public float CurrentHealth => currentHealth;
+
+
+        const int Damage = 1;
         const float BodySize = 1f;
         const float MoveSpeed = 5f;
         const float DespawnBehindDistance = 10f;
@@ -43,6 +51,13 @@ namespace KnightRun.Gameplay
             bodyCollider.isTrigger = true;
             bodyCollider.size = Vector3.one * BodySize;
             bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
+        }
+
+        public void Initialize(int health)
+        {
+            maxHealth = Mathf.Max(1, health);
+            currentHealth = maxHealth;
+            gameObject.name = $"Enemy_HP{maxHealth}";
         }
 
         void Start()
@@ -109,7 +124,7 @@ namespace KnightRun.Gameplay
 
             KnightHealth health = other.GetComponent<KnightHealth>();
             if (health != null)
-                health.TakeDamage(KnightHealth.EnemyTouchDamage);
+                health.TakeDamage(Damage);
 
             isDead = true;
             Destroy(gameObject);
@@ -156,7 +171,23 @@ namespace KnightRun.Gameplay
             }
         }
 
-        public void BreakBySword()
+        public void TakeDamage(float damage)
+        {
+            if (isDead || damage <= 0f)
+                return;
+
+            currentHealth -= damage;
+
+            if (currentHealth <= 0f)
+                Die();
+        }
+
+        public void TakeDamage(int damage)
+        {
+            TakeDamage((float)damage);
+        }
+
+        void Die()
         {
             if (isDead)
                 return;
@@ -164,6 +195,11 @@ namespace KnightRun.Gameplay
             isDead = true;
             GameManager.Instance?.AddEnemyDefeated();
             Destroy(gameObject);
+        }
+
+        public void BreakBySword()
+        {
+            TakeDamage(EnemyCombatStats.SwordDamage);
         }
     }
 }

@@ -7,6 +7,7 @@ namespace KnightRun.Core
     {
         Ready,
         Running,
+        ChoosingUpgrade,
         GameOver
     }
 
@@ -28,7 +29,7 @@ namespace KnightRun.Core
         public event Action<int> OnEnemiesDefeatedChanged;
 
         [SerializeField] float baseSpeed = 8f;
-        [SerializeField] float maxSpeed = 18f;
+        [SerializeField] float maxSpeed = 40f;
         [SerializeField] float speedRampPerSecond = 0.08f;
 
         RunPhaseManager phaseManager;
@@ -95,6 +96,24 @@ namespace KnightRun.Core
                 return;
 
             State = GameState.GameOver;
+            OnStateChanged?.Invoke(State);
+        }
+
+        public void EnterUpgradeSelection()
+        {
+            if (State != GameState.Running)
+                return;
+
+            State = GameState.ChoosingUpgrade;
+            OnStateChanged?.Invoke(State);
+        }
+
+        public void ResumeFromUpgradeSelection()
+        {
+            if (State != GameState.ChoosingUpgrade)
+                return;
+
+            State = GameState.Running;
             OnStateChanged?.Invoke(State);
         }
 

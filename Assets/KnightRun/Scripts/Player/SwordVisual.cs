@@ -6,6 +6,10 @@ namespace KnightRun.Player
     public class SwordVisual : MonoBehaviour
     {
         Transform swordPivot;
+        Transform blade;
+        Transform guard;
+        Vector3 bladeBaseScale;
+        Vector3 guardBaseScale;
 
         public Transform Pivot => swordPivot;
 
@@ -18,11 +22,28 @@ namespace KnightRun.Player
             swordPivot = pivotGo.transform;
 
             CreatePart(PrimitiveType.Cube, swordPivot, new Vector3(0.07f, 0.07f, 0.3f), new Vector3(0f, 0f, -0.12f), "Handle");
-            CreatePart(PrimitiveType.Cube, swordPivot, new Vector3(0.22f, 0.05f, 0.05f), new Vector3(0f, 0f, 0.06f), "Guard");
-            CreatePart(PrimitiveType.Cube, swordPivot, new Vector3(0.1f, 0.03f, 0.85f), new Vector3(0f, 0f, 0.52f), "Blade");
+            guard = CreatePart(PrimitiveType.Cube, swordPivot, new Vector3(0.22f, 0.05f, 0.05f), new Vector3(0f, 0f, 0.06f), "Guard");
+            blade = CreatePart(PrimitiveType.Cube, swordPivot, new Vector3(0.1f, 0.03f, 0.85f), new Vector3(0f, 0f, 0.52f), "Blade");
+
+            guardBaseScale = guard.localScale;
+            bladeBaseScale = blade.localScale;
         }
 
-        static void CreatePart(PrimitiveType type, Transform parent, Vector3 scale, Vector3 localPosition, string name)
+        public void SetAttackAreaMultiplier(float multiplier)
+        {
+            multiplier = Mathf.Max(1f, multiplier);
+
+            if (blade != null)
+                blade.localScale = bladeBaseScale * multiplier;
+
+            if (guard != null)
+            {
+                float guardScale = 1f + (multiplier - 1f) * 0.6f;
+                guard.localScale = guardBaseScale * guardScale;
+            }
+        }
+
+        static Transform CreatePart(PrimitiveType type, Transform parent, Vector3 scale, Vector3 localPosition, string name)
         {
             var go = GameObject.CreatePrimitive(type);
             go.name = name;
@@ -31,6 +52,7 @@ namespace KnightRun.Player
             go.transform.localPosition = localPosition;
             go.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.KnightSword);
             Object.Destroy(go.GetComponent<Collider>());
+            return go.transform;
         }
     }
 }

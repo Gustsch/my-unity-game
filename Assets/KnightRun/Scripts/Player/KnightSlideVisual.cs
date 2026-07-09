@@ -9,6 +9,7 @@ namespace KnightRun.Player
         Transform swordPivot;
         Renderer bodyRenderer;
         GameObject slideBody;
+        KnightSwordAttack swordAttack;
 
         Vector3 helmetStandPosition;
         Vector3 helmetStandScale;
@@ -20,6 +21,16 @@ namespace KnightRun.Player
 
         static readonly Vector3 SwordStandRotation = new Vector3(-20f, 70f, 0f);
         static readonly Vector3 SwordSlideRotation = new Vector3(78f, 70f, 0f);
+
+        KnightSwordAttack SwordAttack
+        {
+            get
+            {
+                if (swordAttack == null)
+                    swordAttack = GetComponent<KnightSwordAttack>();
+                return swordAttack;
+            }
+        }
 
         public void Build(Transform helmetTransform, Transform swordPivotTransform, Renderer capsuleRenderer)
         {
@@ -57,7 +68,7 @@ namespace KnightRun.Player
                     helmet.localScale = helmetStandScale;
                     helmet.localRotation = helmetStandRotation;
                 }
-                if (swordPivot != null)
+                if (swordPivot != null && (SwordAttack == null || !SwordAttack.IsSwinging))
                     swordPivot.localRotation = Quaternion.Euler(SwordStandRotation);
                 return;
             }
@@ -74,7 +85,7 @@ namespace KnightRun.Player
                 helmet.localRotation = Quaternion.Slerp(helmetStandRotation, HelmetSlideRotation, amount);
             }
 
-            if (swordPivot != null)
+            if (swordPivot != null && (SwordAttack == null || !SwordAttack.IsSwinging))
                 swordPivot.localRotation = Quaternion.Euler(Vector3.Lerp(SwordStandRotation, SwordSlideRotation, amount));
         }
     }

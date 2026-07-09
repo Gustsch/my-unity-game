@@ -5,6 +5,8 @@ namespace KnightRun.Core
         Forest = 0,
         Cave = 1,
         MineCart = 2,
-        Volcano = 3
+        Volcano = 3,
+        IceCavern = 4,
+        Desert = 5
     }
 }

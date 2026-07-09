@@ -11,10 +11,17 @@ namespace KnightRun.World
         [SerializeField] int segmentsAhead = 6;
         [SerializeField] float segmentLength = 20f;
 
+        const int MinEnemiesPerSegment = 5;
+        const int MaxEnemiesPerSegment = 8;
+        const float ContinuousSpawnInterval = 0.45f;
+        const float ContinuousSpawnMinAhead = 16f;
+        const float ContinuousSpawnMaxAhead = 32f;
+
         readonly Queue<TrackSegment> activeSegments = new Queue<TrackSegment>();
         RunnerController player;
         RunPhaseManager phaseManager;
         float nextSpawnZ;
+        float continuousSpawnTimer;
         int segmentCounter;
 
         void Start()
@@ -44,12 +51,34 @@ namespace KnightRun.World
             while (player.transform.position.z + segmentLength * 2f > nextSpawnZ)
                 SpawnSegment();
 
+            UpdateContinuousSpawn();
+
             if (activeSegments.Count == 0)
                 return;
 
             TrackSegment oldest = activeSegments.Peek();
             if (player.transform.position.z - segmentLength > oldest.transform.position.z + segmentLength)
                 RecycleSegment();
+        }
+
+        void UpdateContinuousSpawn()
+        {
+            if (GameManager.Instance == null || GameManager.Instance.State != GameState.Running)
+                return;
+
+            continuousSpawnTimer -= Time.deltaTime;
+            while (continuousSpawnTimer <= 0f)
+            {
+                continuousSpawnTimer += ContinuousSpawnInterval;
+                SpawnEnemyAheadOfPlayer();
+            }
+        }
+
+        RunPhaseSettings GetCurrentSettings()
+        {
+            return phaseManager != null
+                ? phaseManager.CurrentSettings
+                : RunPhaseDefaults.All[0];
         }
 
         void SpawnSegment()
@@ -76,8 +105,12 @@ namespace KnightRun.World
             var contentRoot = new GameObject("Content").transform;
             contentRoot.SetParent(segment.transform, false);
 
-            if (Random.value < settings.obstacleChance)
-                SpawnEnemy(segment, settings);
+            int enemyCount = Random.Range(MinEnemiesPerSegment, MaxEnemiesPerSegment + 1);
+            for (int i = 0; i < enemyCount; i++)
+            {
+                float localZ = Random.Range(2f, segmentLength - 1f);
+                SpawnEnemy(segment, settings, localZ);
+            }
 
             if (Random.value < 0.65f)
                 SpawnCoinLine(contentRoot, settings);
@@ -93,19 +126,35 @@ namespace KnightRun.World
 
         static float[] LanePositions => RunnerController.LanePositions;
 
-        void SpawnEnemy(TrackSegment segment, RunPhaseSettings settings)
+        void SpawnEnemyAheadOfPlayer()
+        {
+            RunPhaseSettings settings = GetCurrentSettings();
+            float spawnZ = player.transform.position.z + Random.Range(ContinuousSpawnMinAhead, ContinuousSpawnMaxAhead);
+            SpawnEnemyAt(settings, GetSpawnX(settings), spawnZ);
+        }
+
+        void SpawnEnemy(TrackSegment segment, RunPhaseSettings settings, float localZ)
         {
             Vector3 worldPosition = segment.transform.position + new Vector3(
                 GetSpawnX(settings),
                 0f,
-                segmentLength * 0.55f);
+                localZ);
 
+            SpawnEnemyAt(settings, worldPosition.x, worldPosition.z);
+        }
+
+        void SpawnEnemyAt(RunPhaseSettings settings, float x, float z)
+        {
             var enemyGo = new GameObject("Enemy");
             enemyGo.transform.SetParent(transform, false);
-            enemyGo.transform.position = worldPosition;
+            enemyGo.transform.position = new Vector3(x, 0f, z);
 
             var enemy = enemyGo.AddComponent<Enemy>();
             enemy.Build();
+
+            float distance = GameManager.Instance != null ? GameManager.Instance.Distance : 0f;
+            int health = EnemyCombatStats.GetMaxHealthForDistance(distance);
+            enemy.Initialize(health);
         }
 
         void SpawnCoinLine(Transform parent, RunPhaseSettings settings)
@@ -153,6 +202,7 @@ namespace KnightRun.World
                 Destroy(enemy.gameObject);
 
             nextSpawnZ = 0f;
+            continuousSpawnTimer = 0f;
             segmentCounter = 0;
 
             for (int i = 0; i < segmentsAhead; i++)

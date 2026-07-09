@@ -1,0 +1,96 @@
+using KnightRun.Progression;
+using KnightRun.World;
+using UnityEngine;
+
+namespace KnightRun.Gameplay
+{
+    public class BombProjectile : MonoBehaviour
+    {
+        const float ThrowDuration = 0.55f;
+        const float ArcHeight = 3.5f;
+        const float ExplosionHeight = 8f;
+
+        Vector3 startPosition;
+        Vector3 landPosition;
+        float damage;
+        float explosionRadius;
+        float timer;
+        bool exploded;
+
+        public static void Throw(Vector3 from, Vector3 landPosition, float damage, float areaMultiplier)
+        {
+            areaMultiplier = Mathf.Max(1f, areaMultiplier);
+
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = "Bomb";
+            go.transform.localScale = Vector3.one * 0.35f;
+            go.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.VolcanoRock);
+            Object.Destroy(go.GetComponent<Collider>());
+
+            var fuse = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            fuse.name = "Fuse";
+            fuse.transform.SetParent(go.transform, false);
+            fuse.transform.localScale = new Vector3(0.12f, 0.18f, 0.12f);
+            fuse.transform.localPosition = new Vector3(0f, 0.42f, 0f);
+            fuse.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Coin);
+            Object.Destroy(fuse.GetComponent<Collider>());
+
+            var bomb = go.AddComponent<BombProjectile>();
+            bomb.startPosition = from;
+            bomb.landPosition = landPosition;
+            bomb.damage = Mathf.Max(0.01f, damage);
+            bomb.explosionRadius = SkillPool.BombBaseExplosionRadius * areaMultiplier;
+            go.transform.position = from;
+        }
+
+        void Update()
+        {
+            if (exploded)
+                return;
+
+            timer += Time.deltaTime;
+            float t = Mathf.Clamp01(timer / ThrowDuration);
+
+            Vector3 runDelta = RunForwardMotion.GetDelta();
+            startPosition += runDelta;
+            landPosition += runDelta;
+
+            if (t < 1f)
+            {
+                Vector3 position = Vector3.Lerp(startPosition, landPosition, t);
+                position.y += Mathf.Sin(t * Mathf.PI) * ArcHeight;
+                transform.position = position;
+                return;
+            }
+
+            Explode();
+        }
+
+        void Explode()
+        {
+            exploded = true;
+
+            Vector3 center = new Vector3(landPosition.x, ExplosionHeight * 0.5f, landPosition.z);
+            Vector3 halfExtents = new Vector3(explosionRadius, ExplosionHeight * 0.5f, explosionRadius);
+
+            Collider[] hits = Physics.OverlapBox(
+                center,
+                halfExtents,
+                Quaternion.identity,
+                ~0,
+                QueryTriggerInteraction.Collide);
+
+            foreach (Collider hit in hits)
+            {
+                if (hit.CompareTag("Player"))
+                    continue;
+
+                Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
+                if (enemy != null)
+                    enemy.TakeDamage(damage);
+            }
+
+            Destroy(gameObject);
+        }
+    }
+}

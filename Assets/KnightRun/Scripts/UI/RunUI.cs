@@ -34,8 +34,8 @@ namespace KnightRun.UI
             healthText = CreateText(canvasGo.transform, "Vida: 100", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -130f));
             enemiesDefeatedText = CreateText(canvasGo.transform, "Inimigos: 0", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -170f));
             scoreText = CreateText(canvasGo.transform, "Score: 0", 28, TextAnchor.UpperRight, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, -90f));
-            hintText = CreateText(canvasGo.transform, "A/D ou setas: mover | Espaco: pular | S: deslizar | Enter: iniciar | R: reiniciar", 18, TextAnchor.LowerCenter, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f));
-            stateText = CreateText(canvasGo.transform, "Pressione ENTER para correr!", 30, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero);
+            hintText = CreateText(canvasGo.transform, "Clique na aba Game | A/D: mover | Espaco: pular | S: deslizar | Enter: iniciar | R: reiniciar", 18, TextAnchor.LowerCenter, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f));
+            stateText = CreateText(canvasGo.transform, "Clique na aba Game e pressione ENTER", 30, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero);
 
             gameManager = GameManager.Instance;
             phaseManager = RunPhaseManager.Instance;
@@ -55,7 +55,7 @@ namespace KnightRun.UI
             if (knightHealth != null)
             {
                 knightHealth.OnHealthChanged += UpdateHealth;
-                UpdateHealth(knightHealth.CurrentHealth, KnightHealth.MaxHealth);
+                UpdateHealth(knightHealth.CurrentHealth, knightHealth.MaxHealth);
             }
         }
 
@@ -64,10 +64,10 @@ namespace KnightRun.UI
             if (gameManager == null)
                 return;
 
-            if (gameManager.State == GameState.Ready && Input.GetKeyDown(KeyCode.Return))
+            if (gameManager.State == GameState.Ready && KnightInput.GetKeyDown(KeyCode.Return))
                 gameManager.StartRun();
 
-            if (gameManager.State == GameState.GameOver && Input.GetKeyDown(KeyCode.R))
+            if (gameManager.State == GameState.GameOver && KnightInput.GetKeyDown(KeyCode.R))
                 GameBootstrap.RestartGame();
         }
 
@@ -125,6 +125,10 @@ namespace KnightRun.UI
                 case GameState.Running:
                     stateText.text = string.Empty;
                     hintText.enabled = true;
+                    break;
+                case GameState.ChoosingUpgrade:
+                    stateText.text = string.Empty;
+                    hintText.enabled = false;
                     break;
                 case GameState.GameOver:
                     stateText.text = "Game Over!\nPressione R para reiniciar";

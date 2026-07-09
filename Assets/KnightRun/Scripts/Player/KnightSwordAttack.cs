@@ -1,5 +1,6 @@
 using KnightRun.Core;
 using KnightRun.Gameplay;
+using KnightRun.Progression;
 using UnityEngine;
 
 namespace KnightRun.Player
@@ -9,20 +10,46 @@ namespace KnightRun.Player
     {
         SwordVisual swordVisual;
         CharacterController body;
+        HeroUpgradeStats upgradeStats;
         GameManager gameManager;
 
         float attackTimer;
         float swingTimer;
         bool isSwinging;
         bool hitApplied;
+        int remainingVolleySwings;
 
-        const float AttackInterval = 0.5f;
-        const float SwingDuration = 0.32f;
+        const float BaseAttackInterval = 0.5f;
+        const float BaseSwingDuration = 0.32f;
         const float HitSizeMultiplier = 1.5f;
         const float ArcWidthMultiplier = 2.2f;
+        const float MinAttackInterval = 0.15f;
+        const float MinSwingDuration = 0.1f;
+        const float AttackHitHeight = 2f;
+        const float AttackBodyWidth = 0.8f;
+
+        public bool IsSwinging => isSwinging;
 
         static readonly Quaternion IdleRotation = Quaternion.Euler(-20f, 70f, 0f);
         static readonly Quaternion SlashRotation = Quaternion.Euler(-20f, -70f, 0f);
+
+        float AttackSpeedMultiplier => UpgradeStats != null ? UpgradeStats.AttackSpeedMultiplier : 1f;
+
+        float AttackInterval =>
+            Mathf.Max(MinAttackInterval, BaseAttackInterval / AttackSpeedMultiplier);
+
+        float SwingDuration =>
+            Mathf.Max(MinSwingDuration, BaseSwingDuration / AttackSpeedMultiplier);
+
+        HeroUpgradeStats UpgradeStats
+        {
+            get
+            {
+                if (upgradeStats == null)
+                    upgradeStats = GetComponent<HeroUpgradeStats>();
+                return upgradeStats;
+            }
+        }
 
         void Awake()
         {
@@ -34,6 +61,26 @@ namespace KnightRun.Player
         {
             gameManager = GameManager.Instance;
             attackTimer = AttackInterval * 0.5f;
+
+            var stats = UpgradeStats;
+            if (stats != null)
+                stats.OnBonusesChanged += UpdateSwordVisualScale;
+
+            UpdateSwordVisualScale();
+        }
+
+        void OnDestroy()
+        {
+            if (upgradeStats != null)
+                upgradeStats.OnBonusesChanged -= UpdateSwordVisualScale;
+        }
+
+        void UpdateSwordVisualScale()
+        {
+            if (swordVisual == null || UpgradeStats == null)
+                return;
+
+            swordVisual.SetAttackAreaMultiplier(UpgradeStats.AttackAreaMultiplier);
         }
 
         void Update()
@@ -43,7 +90,7 @@ namespace KnightRun.Player
 
             if (isSwinging)
             {
-                UpdateSwing();
+                AdvanceSwing();
                 return;
             }
 
@@ -52,24 +99,33 @@ namespace KnightRun.Player
                 StartSwing();
         }
 
+        void LateUpdate()
+        {
+            if (!isSwinging || swordVisual == null || swordVisual.Pivot == null)
+                return;
+
+            float t = swingTimer / SwingDuration;
+            float arcT = Mathf.SmoothStep(0f, 1f, t);
+            swordVisual.Pivot.localRotation = Quaternion.Slerp(IdleRotation, SlashRotation, arcT);
+        }
+
         void StartSwing()
+        {
+            remainingVolleySwings = UpgradeStats != null ? UpgradeStats.AttackVolleyCount : 1;
+            BeginVolleySwing();
+        }
+
+        void BeginVolleySwing()
         {
             isSwinging = true;
             swingTimer = 0f;
             hitApplied = false;
-            attackTimer = AttackInterval;
         }
 
-        void UpdateSwing()
+        void AdvanceSwing()
         {
             swingTimer += Time.deltaTime;
             float t = swingTimer / SwingDuration;
-
-            if (swordVisual != null && swordVisual.Pivot != null)
-            {
-                float arcT = Mathf.SmoothStep(0f, 1f, t);
-                swordVisual.Pivot.localRotation = Quaternion.Slerp(IdleRotation, SlashRotation, arcT);
-            }
 
             if (!hitApplied && t >= 0.45f)
             {
@@ -79,7 +135,15 @@ namespace KnightRun.Player
 
             if (t >= 1f)
             {
+                remainingVolleySwings--;
+                if (remainingVolleySwings > 0)
+                {
+                    BeginVolleySwing();
+                    return;
+                }
+
                 isSwinging = false;
+                attackTimer = AttackInterval;
                 if (swordVisual != null && swordVisual.Pivot != null)
                     swordVisual.Pivot.localRotation = IdleRotation;
             }
@@ -87,13 +151,14 @@ namespace KnightRun.Player
 
         void DetectHits()
         {
-            float bodyWidth = body.radius * 2f;
-            float bodyHeight = body.height;
+            float bodyWidth = AttackBodyWidth;
+            float bodyHeight = AttackHitHeight;
             float bodyDepth = bodyWidth;
 
-            float hitWidth = bodyWidth * HitSizeMultiplier * ArcWidthMultiplier;
-            float hitHeight = bodyHeight * HitSizeMultiplier;
-            float hitDepth = bodyDepth * HitSizeMultiplier;
+            float areaMultiplier = UpgradeStats != null ? UpgradeStats.AttackAreaMultiplier : 1f;
+            float hitWidth = bodyWidth * HitSizeMultiplier * ArcWidthMultiplier * areaMultiplier;
+            float hitHeight = bodyHeight * HitSizeMultiplier * areaMultiplier;
+            float hitDepth = bodyDepth * HitSizeMultiplier * areaMultiplier;
 
             Vector3 center = transform.position + Vector3.forward * (bodyDepth * 0.5f + hitDepth * 0.5f);
             center.y = transform.position.y + bodyHeight * 0.5f;
@@ -107,7 +172,10 @@ namespace KnightRun.Player
 
                 Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
                 if (enemy != null)
-                    enemy.BreakBySword();
+                {
+                    int damage = UpgradeStats != null ? UpgradeStats.SwordDamage : SkillPool.StartingSwordLevel;
+                    enemy.TakeDamage(damage);
+                }
             }
         }
     }

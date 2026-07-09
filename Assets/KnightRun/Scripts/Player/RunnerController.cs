@@ -1,5 +1,6 @@
 using KnightRun;
 using KnightRun.Core;
+using KnightRun.Progression;
 using UnityEngine;
 
 namespace KnightRun.Player
@@ -21,34 +22,63 @@ namespace KnightRun.Player
         CharacterController controller;
         MineCartVisual mineCartVisual;
         KnightSlideVisual slideVisual;
+        HeroUpgradeStats upgradeStats;
         GameManager gameManager;
         RunPhaseManager phaseManager;
 
         float verticalVelocity;
         float targetLaneX;
         float horizontalInput;
+        float iceHorizontalVelocity;
         float slideTimer;
         float fallRestartCooldown;
 
         const float LaneSwitchSpeed = 80f;
-        const float FreeMoveSpeed = 80f;
+        const float BaseFreeMoveSpeed = 80f;
         const float JumpForce = 10f;
         const float Gravity = -32f;
-        const float SlideDuration = 0.55f;
+        const float BaseSlideDuration = 0.55f;
         const float SlideImmunityStart = 0.25f;
         const float SlideImmunityEnd = 0.75f;
         const float NormalHeight = 2f;
         const float SlideHeight = 1f;
         const float FallRestartY = -4f;
+        const float IceAcceleration = 36f;
+        const float IceStartAcceleration = 14f;
+        const float IceDeceleration = 50f;
+        const float IceStopThreshold = 0.15f;
+
+        float FreeMoveSpeed
+        {
+            get
+            {
+                float multiplier = upgradeStats != null ? upgradeStats.MoveSpeedMultiplier : 1f;
+                return BaseFreeMoveSpeed * multiplier;
+            }
+        }
+
+        float SlideDuration
+        {
+            get
+            {
+                float multiplier = upgradeStats != null ? upgradeStats.SlideDurationMultiplier : 1f;
+                return BaseSlideDuration * multiplier;
+            }
+        }
 
         bool UsesLaneMovement =>
             phaseManager != null && phaseManager.CurrentSettings.useLaneMovement;
+
+
+        bool UsesSlideMovement =>
+            phaseManager != null && phaseManager.CurrentSettings.useSlideMovement;
 
         void Awake()
         {
             controller = GetComponent<CharacterController>();
             mineCartVisual = GetComponent<MineCartVisual>();
             slideVisual = GetComponent<KnightSlideVisual>();
+            upgradeStats = GetComponent<HeroUpgradeStats>();
             targetLaneX = LanePositions[CurrentLane];
         }
 
@@ -87,6 +117,9 @@ namespace KnightRun.Player
 
             if (settings.useLaneMovement)
                 SnapToNearestLane();
+
+            if (!settings.useSlideMovement)
+                iceHorizontalVelocity = 0f;
         }
 
         void CheckFall()
@@ -110,24 +143,24 @@ namespace KnightRun.Player
             {
                 horizontalInput = 0f;
 
-                if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+                if (KnightInput.GetKeyDown(KeyCode.A) || KnightInput.GetKeyDown(KeyCode.LeftArrow))
                     ChangeLane(-1);
-                if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+                if (KnightInput.GetKeyDown(KeyCode.D) || KnightInput.GetKeyDown(KeyCode.RightArrow))
                     ChangeLane(1);
             }
             else
             {
                 horizontalInput = 0f;
-                if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+                if (KnightInput.GetKey(KeyCode.A) || KnightInput.GetKey(KeyCode.LeftArrow))
                     horizontalInput -= 1f;
-                if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
+                if (KnightInput.GetKey(KeyCode.D) || KnightInput.GetKey(KeyCode.RightArrow))
                     horizontalInput += 1f;
             }
 
-            if ((Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.UpArrow)) && IsGrounded && !IsSliding)
+            if ((KnightInput.GetKeyDown(KeyCode.W) || KnightInput.GetKeyDown(KeyCode.Space) || KnightInput.GetKeyDown(KeyCode.UpArrow)) && IsGrounded && !IsSliding)
                 Jump();
 
-            if ((Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) && IsGrounded && !IsSliding)
+            if ((KnightInput.GetKeyDown(KeyCode.S) || KnightInput.GetKeyDown(KeyCode.DownArrow)) && IsGrounded && !IsSliding)
                 StartSlide();
         }
 
@@ -237,8 +270,13 @@ namespace KnightRun.Player
 
             if (UsesLaneMovement)
                 position.x = Mathf.MoveTowards(position.x, targetLaneX, LaneSwitchSpeed * Time.deltaTime);
+            else if (UsesSlideMovement)
+                position.x = ApplyIceMovement(position.x);
             else
+            {
+                iceHorizontalVelocity = 0f;
                 position.x = Mathf.Clamp(position.x + horizontalInput * FreeMoveSpeed * Time.deltaTime, TrackMinX, TrackMaxX);
+            }
 
             if (controller.isGrounded && verticalVelocity < 0f)
             {
@@ -256,6 +294,51 @@ namespace KnightRun.Player
             controller.Move(motion);
         }
 
+        float ApplyIceMovement(float currentX)
+        {
+            float targetVelocity = horizontalInput * FreeMoveSpeed;
+            bool hasInput = Mathf.Abs(horizontalInput) > 0.01f;
+
+            if (hasInput)
+            {
+                bool startingFromRest = Mathf.Abs(iceHorizontalVelocity) < IceStopThreshold;
+                bool reversing =
+                    Mathf.Abs(iceHorizontalVelocity) > IceStopThreshold &&
+                    Mathf.Sign(horizontalInput) != Mathf.Sign(iceHorizontalVelocity);
+
+                float acceleration = startingFromRest || reversing
+                    ? IceStartAcceleration
+                    : IceAcceleration;
+
+                iceHorizontalVelocity = Mathf.MoveTowards(
+                    iceHorizontalVelocity,
+                    targetVelocity,
+                    acceleration * Time.deltaTime);
+            }
+            else
+            {
+                iceHorizontalVelocity = Mathf.MoveTowards(
+                    iceHorizontalVelocity,
+                    0f,
+                    IceDeceleration * Time.deltaTime);
+            }
+
+            float nextX = currentX + iceHorizontalVelocity * Time.deltaTime;
+
+            if (nextX <= TrackMinX)
+            {
+                nextX = TrackMinX;
+                iceHorizontalVelocity = 0f;
+            }
+            else if (nextX >= TrackMaxX)
+            {
+                nextX = TrackMaxX;
+                iceHorizontalVelocity = 0f;
+            }
+
+            return nextX;
+        }
+
         public void SetMineCartMode(bool enabled)
         {
             if (mineCartVisual != null)
@@ -269,6 +352,7 @@ namespace KnightRun.Player
             CurrentLane = 1;
             targetLaneX = LanePositions[CurrentLane];
             horizontalInput = 0f;
+            iceHorizontalVelocity = 0f;
             verticalVelocity = 0f;
             IsGrounded = true;
             fallRestartCooldown = 0.5f;

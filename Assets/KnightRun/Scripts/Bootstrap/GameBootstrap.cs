@@ -1,9 +1,11 @@
 using KnightRun.CameraSystem;
 using KnightRun.Core;
 using KnightRun.Player;
+using KnightRun.Progression;
 using KnightRun.UI;
 using KnightRun.World;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace KnightRun
 {
@@ -11,19 +13,28 @@ namespace KnightRun
     {
         static GameObject runtimeRoot;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            runtimeRoot = null;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoStart()
         {
-            if (runtimeRoot != null)
-                return;
-
             BuildGame();
         }
 
         public static void BuildGame()
         {
             if (runtimeRoot != null)
+            {
                 Object.Destroy(runtimeRoot);
+                runtimeRoot = null;
+            }
+
+            SuppressDefaultSceneVisuals();
+            ConfigureInput();
 
             runtimeRoot = new GameObject("KnightRun_Root");
 
@@ -31,17 +42,27 @@ namespace KnightRun
             gameManagerGo.transform.SetParent(runtimeRoot.transform, false);
             gameManagerGo.AddComponent<GameManager>();
             gameManagerGo.AddComponent<RunPhaseManager>();
+            gameManagerGo.AddComponent<UpgradeManager>();
 
             var worldGo = new GameObject("World");
             worldGo.transform.SetParent(runtimeRoot.transform, false);
             worldGo.AddComponent<TrackSegmentSpawner>();
 
             var player = CreatePlayer();
+            player.transform.SetParent(runtimeRoot.transform, false);
             var cameraFollow = SetupCamera(player.transform);
 
             var uiGo = new GameObject("UI");
             uiGo.transform.SetParent(runtimeRoot.transform, false);
-            uiGo.AddComponent<RunUI>().Build();
+            var runUI = uiGo.AddComponent<RunUI>();
+            runUI.Build();
+            uiGo.AddComponent<UpgradeSelectionUI>().Build();
+
+            var playerUpgrades = player.GetComponent<HeroUpgradeStats>();
+            if (playerUpgrades == null)
+                playerUpgrades = player.gameObject.AddComponent<HeroUpgradeStats>();
+
+            UpgradeManager.Instance?.BindHero(playerUpgrades);
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = RunPhaseDefaults.All[0].ambientColor;
@@ -54,7 +75,29 @@ namespace KnightRun
             light.intensity = 1.1f;
             light.color = new Color(1f, 0.96f, 0.88f);
 
-            Object.DontDestroyOnLoad(runtimeRoot);
+            if (GameManager.Instance != null && GameManager.Instance.State == GameState.ChoosingUpgrade)
+                GameManager.Instance.ResumeFromUpgradeSelection();
+        }
+
+        static void ConfigureInput()
+        {
+            if (InputSystem.settings == null)
+                return;
+
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+        }
+
+        static void SuppressDefaultSceneVisuals()
+        {
+            HideRootObject("Plane");
+            HideRootObject("Cube");
+        }
+
+        static void HideRootObject(string objectName)
+        {
+            GameObject target = GameObject.Find(objectName);
+            if (target != null && target.transform.parent == null)
+                target.SetActive(false);
         }
 
         static RunnerController CreatePlayer()
@@ -88,10 +131,27 @@ namespace KnightRun
             var swordVisual = playerGo.AddComponent<SwordVisual>();
             swordVisual.Build(playerGo.transform);
 
+            var bowVisual = playerGo.AddComponent<BowVisual>();
+            bowVisual.Build(playerGo.transform);
+
+            var shurikenVisual = playerGo.AddComponent<ShurikenVisual>();
+            shurikenVisual.Build(playerGo.transform);
+
+            var magicBookVisual = playerGo.AddComponent<MagicBookVisual>();
+            magicBookVisual.Build(playerGo.transform);
+
+            var bombVisual = playerGo.AddComponent<BombVisual>();
+            bombVisual.Build(playerGo.transform);
+
             var slideVisual = playerGo.AddComponent<KnightSlideVisual>();
             slideVisual.Build(helmet.transform, swordVisual.Pivot, bodyRenderer);
 
+            playerGo.AddComponent<HeroUpgradeStats>();
             playerGo.AddComponent<KnightSwordAttack>();
+            playerGo.AddComponent<KnightBowAttack>();
+            playerGo.AddComponent<KnightShurikenAttack>();
+            playerGo.AddComponent<KnightMagicBookAura>();
+            playerGo.AddComponent<KnightBombAttack>();
             playerGo.AddComponent<KnightHealth>();
 
             return playerGo.AddComponent<RunnerController>();
@@ -121,6 +181,13 @@ namespace KnightRun
 
         public static void RestartGame()
         {
+            GameManager.Instance?.RestartRun();
+
+            var phaseManager = RunPhaseManager.Instance;
+            phaseManager?.ResetPhases();
+
+            UpgradeManager.Instance?.ResetProgression();
+
             var player = Object.FindFirstObjectByType<RunnerController>();
             if (player != null)
                 player.ResetToStart(RunnerController.StartPosition);
@@ -128,14 +195,11 @@ namespace KnightRun
             var spawner = Object.FindFirstObjectByType<TrackSegmentSpawner>();
             spawner?.ResetSpawner();
 
-            var phaseManager = RunPhaseManager.Instance;
-            phaseManager?.ResetPhases();
             if (phaseManager != null)
                 player?.SetMineCartMode(false);
 
             RenderSettings.ambientLight = RunPhaseDefaults.All[0].ambientColor;
 
-            GameManager.Instance?.RestartRun();
             GameManager.Instance?.StartRun();
         }
     }
