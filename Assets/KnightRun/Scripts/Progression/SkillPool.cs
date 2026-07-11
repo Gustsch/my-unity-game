@@ -12,6 +12,7 @@ namespace KnightRun.Progression
         public const int StartingSwordLevel = 1;
         public const int SwordDamagePerLevel = 10;
         public const int BowDamagePerLevel = 10;
+        public const int BombDamagePerLevel = 10;
 
         public static int GetSwordDamage(int level)
         {
@@ -35,7 +36,6 @@ namespace KnightRun.Progression
         public const float MagicBookBaseAuraRadius = 2.2f;
         public const float BombAttackInterval = 2f;
         public const float BombBaseDamage = 20f;
-        public const float BombDamagePerLevel = 10f;
         public const float BombMinAttackInterval = 0.8f;
         public const float BombFixedThrowDistance = 15f;
         public const float BombBaseExplosionRadius = 2f;
