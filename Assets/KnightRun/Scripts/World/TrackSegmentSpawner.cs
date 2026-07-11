@@ -241,7 +241,14 @@ namespace KnightRun.World
             foreach (CoinBagPickup coinBag in FindObjectsByType<CoinBagPickup>(FindObjectsSortMode.None))
                 Destroy(coinBag.gameObject);
 
+            foreach (ShieldPickup shieldPickup in FindObjectsByType<ShieldPickup>(FindObjectsSortMode.None))
+                Destroy(shieldPickup.gameObject);
+
+            foreach (KillAllPickup killAllPickup in FindObjectsByType<KillAllPickup>(FindObjectsSortMode.None))
+                Destroy(killAllPickup.gameObject);
+
             EnemyFreezeController.Reset();
+            PlayerShieldController.Reset();
 
             PhaseBossController.Instance?.ResetBossState();
 

@@ -378,7 +378,12 @@ namespace KnightRun.Gameplay
             TakeDamage((float)damage);
         }
 
-        void Die()
+        public void ForceKill()
+        {
+            Die(spawnSpecialLoot: false);
+        }
+
+        void Die(bool spawnSpecialLoot = true)
         {
             if (isDead)
                 return;
@@ -390,7 +395,8 @@ namespace KnightRun.Gameplay
             ExperienceOrb.Spawn(
                 dropPosition,
                 isElite ? ExperienceOrb.EliteValue : ExperienceOrb.DefaultValue);
-            EnemyLootDrop.TrySpawnSpecialDrop(dropPosition);
+            if (spawnSpecialLoot)
+                EnemyLootDrop.TrySpawnSpecialDrop(dropPosition);
             Destroy(gameObject);
         }
     }

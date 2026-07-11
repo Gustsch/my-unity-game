@@ -1,6 +1,7 @@
 using System;
 using KnightRun.Meta;
 using KnightRun.Core;
+using KnightRun.Gameplay;
 using KnightRun.Progression;
 using UnityEngine;
 
@@ -116,6 +117,9 @@ namespace KnightRun.Player
 
             float reductionPercent = UpgradeStats != null ? UpgradeStats.DamageReductionPercent : 0f;
             int finalDamage = Mathf.Max(1, Mathf.RoundToInt(amount * (1f - reductionPercent)));
+            finalDamage = PlayerShieldController.Absorb(finalDamage);
+            if (finalDamage <= 0)
+                return;
 
             currentHealth -= finalDamage;
             OnHealthChanged?.Invoke(currentHealth, MaxHealth);
@@ -166,6 +170,7 @@ namespace KnightRun.Player
         {
             resurrectionsRemaining = MetaBonuses.RessurectionsPerRun;
             lastHealedKillThreshold = 0;
+            PlayerShieldController.Reset();
             currentHealth = MaxHealth;
             OnHealthChanged?.Invoke(currentHealth, MaxHealth);
         }

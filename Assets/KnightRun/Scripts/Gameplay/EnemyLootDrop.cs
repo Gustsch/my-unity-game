@@ -9,28 +9,47 @@ namespace KnightRun.Gameplay
         public const float FoodDropChance = 0.005f;
         public const float FreezeDropChance = 0.004f;
         public const float CoinBagDropChance = 0.003f;
+        public const float ShieldDropChance = 0.002f;
+        public const float KillAllDropChance = 0.001f;
         public const float MaxHealthPercentForFood = 0.6f;
 
         public static bool TrySpawnSpecialDrop(Vector3 position)
         {
             float foodChance = CanDropFood() ? FoodDropChance : 0f;
             float roll = Random.value;
+            float threshold = foodChance;
 
-            if (roll < foodChance)
+            if (roll < threshold)
             {
                 FoodPickup.Spawn(position);
                 return true;
             }
 
-            if (roll < foodChance + FreezeDropChance)
+            threshold += FreezeDropChance;
+            if (roll < threshold)
             {
                 FreezePickup.Spawn(position);
                 return true;
             }
 
-            if (roll < foodChance + FreezeDropChance + CoinBagDropChance)
+            threshold += CoinBagDropChance;
+            if (roll < threshold)
             {
                 CoinBagPickup.SpawnRandom(position);
+                return true;
+            }
+
+            threshold += ShieldDropChance;
+            if (roll < threshold)
+            {
+                ShieldPickup.Spawn(position);
+                return true;
+            }
+
+            threshold += KillAllDropChance;
+            if (roll < threshold)
+            {
+                KillAllPickup.Spawn(position);
                 return true;
             }
 

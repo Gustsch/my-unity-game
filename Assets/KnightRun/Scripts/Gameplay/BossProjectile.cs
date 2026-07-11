@@ -7,7 +7,7 @@ namespace KnightRun.Gameplay
 {
     public class BossProjectile : MonoBehaviour
     {
-        const float Speed = 14f;
+        const float Speed = 20f;
         const float MaxLifetime = 6f;
         const float HitRadius = 0.55f;
 
@@ -37,7 +37,7 @@ namespace KnightRun.Gameplay
             switch (band)
             {
                 case BossAttackBand.High:
-                    travelY = 2.75f;
+                    travelY = 2.5f;
                     halfHeight = 0.42f;
                     color = HighColor;
                     scale = new Vector3(0.62f, 0.62f, 0.62f);

@@ -1,0 +1,66 @@
+using System.Collections.Generic;
+using KnightRun.Player;
+using UnityEngine;
+
+namespace KnightRun.Gameplay
+{
+    public static class ScreenCombatUtility
+    {
+        const float ViewportPadding = 0.02f;
+        const float FallbackAheadDistance = 28f;
+        const float FallbackBehindDistance = 2f;
+
+        public static int KillAllEnemiesOnScreen()
+        {
+            Camera camera = Camera.main;
+            Enemy[] enemies = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            var toKill = new List<Enemy>(enemies.Length);
+
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                Enemy enemy = enemies[i];
+                if (enemy == null)
+                    continue;
+
+                if (IsOnScreen(enemy.transform.position, camera))
+                    toKill.Add(enemy);
+            }
+
+            for (int i = 0; i < toKill.Count; i++)
+            {
+                if (toKill[i] != null)
+                    toKill[i].ForceKill();
+            }
+
+            return toKill.Count;
+        }
+
+        public static bool IsOnScreen(Vector3 worldPosition, Camera camera = null)
+        {
+            if (camera == null)
+                camera = Camera.main;
+
+            if (camera == null)
+                return IsOnScreenFallback(worldPosition);
+
+            Vector3 viewport = camera.WorldToViewportPoint(worldPosition + Vector3.up * 0.5f);
+            if (viewport.z <= 0f)
+                return false;
+
+            return viewport.x >= -ViewportPadding
+                && viewport.x <= 1f + ViewportPadding
+                && viewport.y >= -ViewportPadding
+                && viewport.y <= 1f + ViewportPadding;
+        }
+
+        static bool IsOnScreenFallback(Vector3 worldPosition)
+        {
+            RunnerController runner = Object.FindFirstObjectByType<RunnerController>();
+            if (runner == null)
+                return true;
+
+            float relativeZ = worldPosition.z - runner.transform.position.z;
+            return relativeZ >= -FallbackBehindDistance && relativeZ <= FallbackAheadDistance;
+        }
+    }
+}
