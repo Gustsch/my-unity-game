@@ -10,6 +10,7 @@ namespace KnightRun.Meta
             HeroCharacterId.Ninja,
             HeroCharacterId.Barbarian,
             HeroCharacterId.Alchemist,
+            HeroCharacterId.Mage,
         };
 
         public static bool IsOwned(HeroCharacterId id)

@@ -63,6 +63,15 @@ namespace KnightRun.Meta
                 WeaponName = "Bombinha",
                 UnlockAfterBossPhaseIndex = 3,
                 PurchaseCost = 550
+            },
+            new CharacterDefinition
+            {
+                Id = HeroCharacterId.Mage,
+                DisplayName = "Mago",
+                StartingWeapon = HeroSkillId.MagicBook,
+                WeaponName = "Livro de Magia",
+                UnlockAfterBossPhaseIndex = 4,
+                PurchaseCost = 700
             }
         };
 

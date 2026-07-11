@@ -23,10 +23,13 @@ namespace KnightRun.Gameplay
         float popupBatchTimer;
         float contactCooldownTimer;
         float pendingKnockbackZ;
+        float stunUntil;
 
         public int MaxHealth => maxHealth;
         public float CurrentHealth => currentHealth;
         public bool IsElite => isElite;
+
+        public bool IsStunned => Time.time < stunUntil;
 
         static readonly Color EliteTint = new Color(0.28f, 0.28f, 0.32f);
         static readonly Color FrozenTint = new Color(0.55f, 0.82f, 1f);
@@ -136,6 +139,17 @@ namespace KnightRun.Gameplay
                 return;
             }
 
+            if (IsStunned)
+            {
+                UpdateDamagePopupBatch();
+                UpdateFreezeVisual();
+
+                if (transform.position.z < player.position.z - DespawnBehindDistance)
+                    Destroy(gameObject);
+
+                return;
+            }
+
             UpdateFreezeVisual();
 
             if (contactCooldownTimer > 0f)
@@ -195,7 +209,7 @@ namespace KnightRun.Gameplay
 
         void TryDealContactDamage(Collider other)
         {
-            if (isDead || isKnockedDown || EnemyFreezeController.IsActive || !other.CompareTag("Player"))
+            if (isDead || isKnockedDown || EnemyFreezeController.IsActive || IsStunned || !other.CompareTag("Player"))
                 return;
 
             if (contactCooldownTimer > 0f)
@@ -380,6 +394,14 @@ namespace KnightRun.Gameplay
         public void TakeDamage(int damage)
         {
             TakeDamage((float)damage);
+        }
+
+        public void ApplyStun(float duration)
+        {
+            if (isDead || duration <= 0f)
+                return;
+
+            stunUntil = Mathf.Max(stunUntil, Time.time + duration);
         }
 
         public void ForceKill()

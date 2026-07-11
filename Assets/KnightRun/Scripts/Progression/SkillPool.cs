@@ -31,9 +31,11 @@ namespace KnightRun.Progression
         public const float ShurikenMinAttackInterval = 0.1f;
         public const float ShurikenBaseDamage = 4f;
         public const float ShurikenDamagePerLevel = 4f;
-        public const float MagicBookBaseAuraDps = 1f;
-        public const float MagicBookAuraDpsPerLevel = 1f;
-        public const float MagicBookBaseAuraRadius = 2.2f;
+        public const float MagicBookBaseAuraDamage = 4f;
+        public const float MagicBookAuraDamagePerLevel = 4f;
+        public const float MagicBookAuraTickInterval = 0.5f;
+        public const float MagicBookAuraStunDuration = 0.1f;
+        public const float MagicBookBaseAuraRadius = 2.9f;
         public const float BombAttackInterval = 2f;
         public const float BombBaseDamage = 20f;
         public const float BombMinAttackInterval = 0.8f;
@@ -91,8 +93,8 @@ namespace KnightRun.Progression
                     ? $"Lanca shurikens com {ShurikenBaseDamage:0.#} de dano no inimigo mais proximo"
                     : $"+{ShurikenDamagePerLevel:0.#} dano da shuriken",
                 HeroSkillId.MagicBook => nextLevel == 1
-                    ? $"Aura com {MagicBookBaseAuraDps:0.#} de dano/s em inimigos proximos"
-                    : $"+{MagicBookAuraDpsPerLevel:0.#} dano/s da aura",
+                    ? $"Aura com {MagicBookBaseAuraDamage:0.#} de dano a cada {MagicBookAuraTickInterval:0.#}s e stun leve"
+                    : $"+{MagicBookAuraDamagePerLevel:0.#} dano da aura",
                 HeroSkillId.Bomb => nextLevel == 1
                     ? $"Arremessa bomba a {BombFixedThrowDistance:0.#}m que explode em area"
                     : "+10 dano da bomba",

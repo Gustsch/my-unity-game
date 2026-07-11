@@ -45,7 +45,7 @@ namespace KnightRun.Progression
             }
         }
 
-        public float MagicBookAuraDps
+        public float MagicBookAuraDamage
         {
             get
             {
@@ -53,7 +53,8 @@ namespace KnightRun.Progression
                 if (level <= 0)
                     return 0f;
 
-                float baseDamage = SkillPool.MagicBookBaseAuraDps + (level - 1) * SkillPool.MagicBookAuraDpsPerLevel;
+                float baseDamage = SkillPool.MagicBookBaseAuraDamage +
+                    (level - 1) * SkillPool.MagicBookAuraDamagePerLevel;
                 return ScaleDamage(baseDamage);
             }
         }

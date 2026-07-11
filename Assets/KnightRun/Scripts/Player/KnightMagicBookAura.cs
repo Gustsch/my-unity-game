@@ -14,6 +14,7 @@ namespace KnightRun.Player
         MagicBookVisual bookVisual;
         HeroUpgradeStats upgradeStats;
         GameManager gameManager;
+        float tickTimer;
 
         HeroUpgradeStats UpgradeStats
         {
@@ -67,14 +68,24 @@ namespace KnightRun.Player
             if (gameManager == null || gameManager.State != GameState.Running)
                 return;
 
-            ApplyAuraDamage();
+            tickTimer -= Time.deltaTime;
+            if (tickTimer > 0f)
+                return;
+
+            tickTimer = GetTickInterval();
+            ApplyAuraTick();
         }
 
-        void ApplyAuraDamage()
+        float GetTickInterval()
+        {
+            float speedMultiplier = UpgradeStats.AttackSpeedMultiplier * MetaBonuses.AttackSpeedMultiplier;
+            return SkillPool.MagicBookAuraTickInterval / Mathf.Max(0.1f, speedMultiplier);
+        }
+
+        void ApplyAuraTick()
         {
             float radius = SkillPool.MagicBookBaseAuraRadius * UpgradeStats.AttackAreaMultiplier;
-            float dps = UpgradeStats.MagicBookAuraDps * UpgradeStats.AttackSpeedMultiplier * MetaBonuses.AttackSpeedMultiplier;
-            float damage = dps * Time.deltaTime;
+            float damage = UpgradeStats.MagicBookAuraDamage;
 
             if (damage <= 0f)
                 return;
@@ -93,6 +104,10 @@ namespace KnightRun.Player
             {
                 if (hit.CompareTag("Player"))
                     continue;
+
+                Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
+                if (enemy != null)
+                    enemy.ApplyStun(SkillPool.MagicBookAuraStunDuration);
 
                 CombatTarget.TryApplyDamage(hit, damage);
             }

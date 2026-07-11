@@ -36,7 +36,7 @@ namespace KnightRun.Player
             auraGo.transform.SetParent(parent, false);
             auraGo.transform.localPosition = new Vector3(0f, 0.55f, 0.35f);
             auraGo.transform.localRotation = Quaternion.identity;
-            auraGo.transform.localScale = new Vector3(2.4f, 0.03f, 2.4f);
+            auraGo.transform.localScale = new Vector3(3.1f, 0.03f, 3.1f);
             auraGo.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Coin);
             Object.Destroy(auraGo.GetComponent<Collider>());
             auraRing = auraGo.transform;
