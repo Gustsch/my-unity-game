@@ -1,3 +1,4 @@
+using KnightRun.Core;
 using KnightRun.World;
 using UnityEngine;
 
@@ -49,6 +50,10 @@ namespace KnightRun.Gameplay
             if (hasHit)
                 return;
 
+            GameManager gameManager = GameManager.Instance;
+            if (gameManager == null || gameManager.State != GameState.Running)
+                return;
+
             lifetime += Time.deltaTime;
             if (lifetime >= MaxLifetime)
             {
@@ -87,14 +92,12 @@ namespace KnightRun.Gameplay
                 if (hit.CompareTag("Player"))
                     continue;
 
-                Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
-                if (enemy == null)
-                    continue;
-
-                hasHit = true;
-                enemy.TakeDamage(damage);
-                Destroy(gameObject);
-                return;
+                if (CombatTarget.TryApplyDamage(hit, damage))
+                {
+                    hasHit = true;
+                    Destroy(gameObject);
+                    return;
+                }
             }
         }
 

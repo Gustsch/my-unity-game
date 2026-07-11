@@ -7,8 +7,6 @@ namespace KnightRun.Core
     {
         public RunPhase phase;
         public string displayName;
-        public float distanceStart;
-        public float distanceEnd;
         public Color groundColor;
         public Color wallColor;
         public Color accentColor;
@@ -17,6 +15,8 @@ namespace KnightRun.Core
         public float obstacleChance;
         public bool useLaneMovement;
         public bool useSlideMovement;
+        public int enemyHealthMin;
+        public int enemyHealthMax;
     }
 
     public static class RunPhaseDefaults
@@ -27,8 +27,6 @@ namespace KnightRun.Core
             {
                 phase = RunPhase.Forest,
                 displayName = "Floresta Encantada",
-                distanceStart = 0f,
-                distanceEnd = 600f,
                 groundColor = new Color(0.22f, 0.45f, 0.18f),
                 wallColor = new Color(0.12f, 0.32f, 0.10f),
                 accentColor = new Color(0.35f, 0.55f, 0.20f),
@@ -36,14 +34,14 @@ namespace KnightRun.Core
                 speedMultiplier = 1f,
                 obstacleChance = 0.35f,
                 useLaneMovement = false,
-                useSlideMovement = false
+                useSlideMovement = false,
+                enemyHealthMin = 10,
+                enemyHealthMax = 10
             },
             new RunPhaseSettings
             {
                 phase = RunPhase.Cave,
                 displayName = "Caverna Sombria",
-                distanceStart = 600f,
-                distanceEnd = 1200f,
                 groundColor = new Color(0.28f, 0.24f, 0.20f),
                 wallColor = new Color(0.15f, 0.13f, 0.12f),
                 accentColor = new Color(0.40f, 0.35f, 0.28f),
@@ -51,14 +49,14 @@ namespace KnightRun.Core
                 speedMultiplier = 1.15f,
                 obstacleChance = 0.45f,
                 useLaneMovement = false,
-                useSlideMovement = false
+                useSlideMovement = false,
+                enemyHealthMin = 20,
+                enemyHealthMax = 40
             },
             new RunPhaseSettings
             {
                 phase = RunPhase.MineCart,
                 displayName = "Trilho da Mina",
-                distanceStart = 1200f,
-                distanceEnd = 1800f,
                 groundColor = new Color(0.35f, 0.22f, 0.12f),
                 wallColor = new Color(0.10f, 0.08f, 0.07f),
                 accentColor = new Color(0.55f, 0.38f, 0.18f),
@@ -66,14 +64,14 @@ namespace KnightRun.Core
                 speedMultiplier = 1.3f,
                 obstacleChance = 0.55f,
                 useLaneMovement = true,
-                useSlideMovement = false
+                useSlideMovement = false,
+                enemyHealthMin = 40,
+                enemyHealthMax = 70
             },
             new RunPhaseSettings
             {
                 phase = RunPhase.Volcano,
                 displayName = "Vulcao Ardente",
-                distanceStart = 1800f,
-                distanceEnd = 2400f,
                 groundColor = new Color(0.28f, 0.10f, 0.06f),
                 wallColor = new Color(0.18f, 0.08f, 0.06f),
                 accentColor = new Color(0.95f, 0.35f, 0.08f),
@@ -81,14 +79,14 @@ namespace KnightRun.Core
                 speedMultiplier = 1.45f,
                 obstacleChance = 0.6f,
                 useLaneMovement = false,
-                useSlideMovement = false
+                useSlideMovement = false,
+                enemyHealthMin = 70,
+                enemyHealthMax = 120
             },
             new RunPhaseSettings
             {
                 phase = RunPhase.IceCavern,
                 displayName = "Cavernas de Gelo",
-                distanceStart = 2400f,
-                distanceEnd = 3000f,
                 groundColor = new Color(0.10f, 0.28f, 0.35f),
                 wallColor = new Color(0.08f, 0.18f, 0.22f),
                 accentColor = new Color(0.35f, 0.95f, 0.90f),
@@ -96,14 +94,14 @@ namespace KnightRun.Core
                 speedMultiplier = 1.6f,
                 obstacleChance = 0.7f,
                 useLaneMovement = false,
-                useSlideMovement = true
+                useSlideMovement = true,
+                enemyHealthMin = 120,
+                enemyHealthMax = 200
             },
             new RunPhaseSettings
             {
                 phase = RunPhase.Desert,
                 displayName = "Deserto Ardente",
-                distanceStart = 3000f,
-                distanceEnd = 3600f,
                 groundColor = new Color(0.28f, 0.10f, 0.06f),
                 wallColor = new Color(0.18f, 0.08f, 0.06f),
                 accentColor = new Color(0.95f, 0.35f, 0.08f),
@@ -111,7 +109,9 @@ namespace KnightRun.Core
                 speedMultiplier = 1.75f,
                 obstacleChance = 0.8f,
                 useLaneMovement = false,
-                useSlideMovement = false
+                useSlideMovement = false,
+                enemyHealthMin = 200,
+                enemyHealthMax = 350
             }
         };
     }

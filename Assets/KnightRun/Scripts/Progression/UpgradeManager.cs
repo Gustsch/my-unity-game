@@ -11,18 +11,17 @@ namespace KnightRun.Progression
 
         public const int OfferCount = 3;
 
-        // Desativado temporariamente para testar spawn intenso de inimigos.
         public static bool LevelUpEnabled = true;
 
-        public int KillsRequiredForNextLevel { get; private set; } = 1;
-        public int KillsTowardNextLevel { get; private set; }
+        public int XpRequiredForNextLevel { get; private set; } = 1;
+        public int XpTowardNextLevel { get; private set; }
 
-        public event Action<SkillDefinition[]> OnUpgradeOffered;
+        public event Action<int, int> OnXpChanged;
+        public event Action<UpgradeOffer[]> OnUpgradeOffered;
 
         GameManager gameManager;
         HeroUpgradeStats heroStats;
-        SkillDefinition[] currentOffer;
-        int lastEnemiesDefeated;
+        UpgradeOffer[] currentOffer;
 
         void Awake()
         {
@@ -32,17 +31,6 @@ namespace KnightRun.Progression
         void Start()
         {
             gameManager = GameManager.Instance;
-            if (gameManager != null)
-            {
-                lastEnemiesDefeated = gameManager.EnemiesDefeated;
-                gameManager.OnEnemiesDefeatedChanged += HandleEnemiesDefeatedChanged;
-            }
-        }
-
-        void OnDestroy()
-        {
-            if (gameManager != null)
-                gameManager.OnEnemiesDefeatedChanged -= HandleEnemiesDefeatedChanged;
         }
 
         public void BindHero(HeroUpgradeStats stats)
@@ -50,31 +38,31 @@ namespace KnightRun.Progression
             heroStats = stats;
         }
 
-        void HandleEnemiesDefeatedChanged(int enemiesDefeated)
+        public void CollectXp(int amount)
         {
-            if (gameManager == null || gameManager.State != GameState.Running)
+            if (!LevelUpEnabled || gameManager == null || gameManager.State != GameState.Running)
                 return;
 
-            int newKills = enemiesDefeated - lastEnemiesDefeated;
-            lastEnemiesDefeated = enemiesDefeated;
+            if (amount <= 0)
+                return;
 
-            for (int i = 0; i < newKills; i++)
-                RegisterKill();
+            XpTowardNextLevel += amount;
+
+            while (XpTowardNextLevel >= XpRequiredForNextLevel)
+            {
+                XpTowardNextLevel -= XpRequiredForNextLevel;
+                XpRequiredForNextLevel++;
+                NotifyXpChanged();
+                OfferUpgrades();
+                return;
+            }
+
+            NotifyXpChanged();
         }
 
-        void RegisterKill()
+        void NotifyXpChanged()
         {
-            if (!LevelUpEnabled)
-                return;
-
-            KillsTowardNextLevel++;
-
-            if (KillsTowardNextLevel < KillsRequiredForNextLevel)
-                return;
-
-            KillsTowardNextLevel = 0;
-            KillsRequiredForNextLevel++;
-            OfferUpgrades();
+            OnXpChanged?.Invoke(XpTowardNextLevel, XpRequiredForNextLevel);
         }
 
         public void OfferUpgrades()
@@ -107,7 +95,11 @@ namespace KnightRun.Progression
             if (heroStats == null)
                 heroStats = FindFirstObjectByType<HeroUpgradeStats>();
 
-            heroStats?.LevelUpSkill(currentOffer[index].Id);
+            UpgradeOffer offer = currentOffer[index];
+            if (offer.IsCoinReward)
+                gameManager.AddCoin(offer.CoinAmount);
+            else
+                heroStats?.LevelUpSkill(offer.Skill.Id);
 
             currentOffer = null;
             gameManager.ResumeFromUpgradeSelection();
@@ -116,17 +108,14 @@ namespace KnightRun.Progression
         public void ResetProgression()
         {
             currentOffer = null;
-            KillsRequiredForNextLevel = 1;
-            KillsTowardNextLevel = 0;
-            lastEnemiesDefeated = 0;
+            XpRequiredForNextLevel = 1;
+            XpTowardNextLevel = 0;
+            NotifyXpChanged();
 
             if (heroStats == null)
                 heroStats = FindFirstObjectByType<HeroUpgradeStats>();
 
             heroStats?.ResetBonuses();
-
-            if (gameManager != null)
-                lastEnemiesDefeated = gameManager.EnemiesDefeated;
         }
     }
 }

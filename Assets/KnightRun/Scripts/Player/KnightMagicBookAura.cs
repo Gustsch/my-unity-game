@@ -1,5 +1,6 @@
 using KnightRun.Core;
 using KnightRun.Gameplay;
+using KnightRun.Meta;
 using KnightRun.Progression;
 using UnityEngine;
 
@@ -72,7 +73,7 @@ namespace KnightRun.Player
         void ApplyAuraDamage()
         {
             float radius = SkillPool.MagicBookBaseAuraRadius * UpgradeStats.AttackAreaMultiplier;
-            float dps = UpgradeStats.MagicBookAuraDps * UpgradeStats.AttackSpeedMultiplier;
+            float dps = UpgradeStats.MagicBookAuraDps * UpgradeStats.AttackSpeedMultiplier * MetaBonuses.AttackSpeedMultiplier;
             float damage = dps * Time.deltaTime;
 
             if (damage <= 0f)
@@ -93,9 +94,7 @@ namespace KnightRun.Player
                 if (hit.CompareTag("Player"))
                     continue;
 
-                Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
-                if (enemy != null)
-                    enemy.TakeDamage(damage);
+                CombatTarget.TryApplyDamage(hit, damage);
             }
         }
     }

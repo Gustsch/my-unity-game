@@ -7,6 +7,8 @@ namespace KnightRun.Progression
         Shuriken,
         MagicBook,
         Bomb,
+        Boomerang,
+        ThrowingAxe,
         QuickSlash,
         WideArc,
         MultiStrike,

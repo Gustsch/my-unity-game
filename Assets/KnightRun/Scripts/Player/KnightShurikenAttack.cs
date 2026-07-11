@@ -1,5 +1,6 @@
 using KnightRun.Core;
 using KnightRun.Gameplay;
+using KnightRun.Meta;
 using KnightRun.Progression;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace KnightRun.Player
                 if (UpgradeStats == null)
                     return SkillPool.ShurikenAttackInterval;
 
-                float speedMultiplier = UpgradeStats.AttackSpeedMultiplier;
+                float speedMultiplier = UpgradeStats.AttackSpeedMultiplier * MetaBonuses.AttackSpeedMultiplier;
                 return Mathf.Max(
                     SkillPool.ShurikenMinAttackInterval,
                     SkillPool.ShurikenAttackInterval / speedMultiplier);
@@ -86,7 +87,7 @@ namespace KnightRun.Player
             if (attackTimer > 0f)
                 return;
 
-            Enemy target = FindNearestEnemy();
+            Transform target = CombatTarget.FindNearest(transform.position);
             if (target == null)
             {
                 attackTimer = AttackInterval * 0.25f;
@@ -97,7 +98,7 @@ namespace KnightRun.Player
             attackTimer = AttackInterval;
         }
 
-        void ThrowShurikens(Enemy target)
+        void ThrowShurikens(Transform target)
         {
             Vector3 spawnPosition = shurikenVisual != null
                 ? shurikenVisual.ThrowPosition
@@ -123,26 +124,5 @@ namespace KnightRun.Player
             }
         }
 
-        Enemy FindNearestEnemy()
-        {
-            Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-            Enemy nearest = null;
-            float bestDistance = float.MaxValue;
-            Vector3 origin = transform.position;
-
-            foreach (Enemy enemy in enemies)
-            {
-                Vector3 delta = enemy.transform.position - origin;
-                delta.y = 0f;
-                float distance = delta.sqrMagnitude;
-                if (distance < bestDistance)
-                {
-                    bestDistance = distance;
-                    nearest = enemy;
-                }
-            }
-
-            return nearest;
-        }
     }
 }

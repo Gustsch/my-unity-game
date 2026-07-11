@@ -14,8 +14,9 @@ namespace KnightRun.World
         const int MinEnemiesPerSegment = 5;
         const int MaxEnemiesPerSegment = 8;
         const float ContinuousSpawnInterval = 0.45f;
-        const float ContinuousSpawnMinAhead = 16f;
-        const float ContinuousSpawnMaxAhead = 32f;
+        const float MinEnemySpawnAheadOfPlayer = 34f;
+        const float ContinuousSpawnMinAhead = 34f;
+        const float ContinuousSpawnMaxAhead = 52f;
 
         readonly Queue<TrackSegment> activeSegments = new Queue<TrackSegment>();
         RunnerController player;
@@ -66,6 +67,9 @@ namespace KnightRun.World
             if (GameManager.Instance == null || GameManager.Instance.State != GameState.Running)
                 return;
 
+            if (PhaseBossController.Instance != null && PhaseBossController.Instance.IsBossFightActive)
+                return;
+
             continuousSpawnTimer -= Time.deltaTime;
             while (continuousSpawnTimer <= 0f)
             {
@@ -102,14 +106,19 @@ namespace KnightRun.World
 
         void PopulateSegment(TrackSegment segment, RunPhaseSettings settings)
         {
+            if (PhaseBossController.Instance != null && PhaseBossController.Instance.IsBossFightActive)
+                return;
+
             var contentRoot = new GameObject("Content").transform;
             contentRoot.SetParent(segment.transform, false);
 
             int enemyCount = Random.Range(MinEnemiesPerSegment, MaxEnemiesPerSegment + 1);
             for (int i = 0; i < enemyCount; i++)
             {
-                float localZ = Random.Range(2f, segmentLength - 1f);
-                SpawnEnemy(segment, settings, localZ);
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
+
+                SpawnEnemyAt(settings, GetSpawnX(settings), spawnZ);
             }
 
             if (Random.value < 0.65f)
@@ -133,14 +142,22 @@ namespace KnightRun.World
             SpawnEnemyAt(settings, GetSpawnX(settings), spawnZ);
         }
 
-        void SpawnEnemy(TrackSegment segment, RunPhaseSettings settings, float localZ)
+        bool TryRollEnemySpawnZ(TrackSegment segment, out float spawnZ)
         {
-            Vector3 worldPosition = segment.transform.position + new Vector3(
-                GetSpawnX(settings),
-                0f,
-                localZ);
+            spawnZ = 0f;
+            if (player == null)
+                return false;
 
-            SpawnEnemyAt(settings, worldPosition.x, worldPosition.z);
+            float minZ = player.transform.position.z + MinEnemySpawnAheadOfPlayer;
+            float segmentMinZ = segment.transform.position.z + 2f;
+            float segmentMaxZ = segment.transform.position.z + segmentLength - 1f;
+            float spawnMinZ = Mathf.Max(segmentMinZ, minZ);
+
+            if (spawnMinZ >= segmentMaxZ)
+                return false;
+
+            spawnZ = Random.Range(spawnMinZ, segmentMaxZ);
+            return true;
         }
 
         void SpawnEnemyAt(RunPhaseSettings settings, float x, float z)
@@ -152,9 +169,17 @@ namespace KnightRun.World
             var enemy = enemyGo.AddComponent<Enemy>();
             enemy.Build();
 
-            float distance = GameManager.Instance != null ? GameManager.Instance.Distance : 0f;
-            int health = EnemyCombatStats.GetMaxHealthForDistance(distance);
-            enemy.Initialize(health);
+            int health = EnemyCombatStats.RollHealthForPhase(settings);
+            int damage = EnemyCombatStats.BaseContactDamage;
+            bool isElite = Random.value < EnemyCombatStats.EliteSpawnChance;
+
+            if (isElite)
+            {
+                health *= EnemyCombatStats.EliteHealthMultiplier;
+                damage *= EnemyCombatStats.EliteDamageMultiplier;
+            }
+
+            enemy.Initialize(health, damage, isElite);
         }
 
         void SpawnCoinLine(Transform parent, RunPhaseSettings settings)
@@ -200,6 +225,25 @@ namespace KnightRun.World
 
             foreach (Enemy enemy in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
                 Destroy(enemy.gameObject);
+
+            foreach (Boss boss in FindObjectsByType<Boss>(FindObjectsSortMode.None))
+                Destroy(boss.gameObject);
+
+            foreach (ExperienceOrb orb in FindObjectsByType<ExperienceOrb>(FindObjectsSortMode.None))
+                Destroy(orb.gameObject);
+
+            foreach (FreezePickup freezePickup in FindObjectsByType<FreezePickup>(FindObjectsSortMode.None))
+                Destroy(freezePickup.gameObject);
+
+            foreach (FoodPickup foodPickup in FindObjectsByType<FoodPickup>(FindObjectsSortMode.None))
+                Destroy(foodPickup.gameObject);
+
+            foreach (CoinBagPickup coinBag in FindObjectsByType<CoinBagPickup>(FindObjectsSortMode.None))
+                Destroy(coinBag.gameObject);
+
+            EnemyFreezeController.Reset();
+
+            PhaseBossController.Instance?.ResetBossState();
 
             nextSpawnZ = 0f;
             continuousSpawnTimer = 0f;

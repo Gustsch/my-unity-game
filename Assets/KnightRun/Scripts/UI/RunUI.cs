@@ -1,6 +1,7 @@
 using KnightRun;
 using KnightRun.Core;
 using KnightRun.Player;
+using KnightRun.Progression;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +9,9 @@ namespace KnightRun.UI
 {
     public class RunUI : MonoBehaviour
     {
+        public static RunUI Instance { get; private set; }
+
+        GameObject canvasRoot;
         Text titleText;
         Text scoreText;
         Text phaseText;
@@ -15,27 +19,46 @@ namespace KnightRun.UI
         Text enemiesDefeatedText;
         Text hintText;
         Text stateText;
+        Image xpBarFill;
+        Text xpBarText;
+
+        GameObject pausePanel;
+        Text pauseTitleText;
 
         GameManager gameManager;
         RunPhaseManager phaseManager;
         KnightHealth knightHealth;
+        UpgradeManager upgradeManager;
 
         public void Build()
         {
-            var canvasGo = new GameObject("RunUI");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
+            Instance = this;
+            UiFactory.EnsureEventSystem();
+            canvasRoot = new GameObject("RunUI");
+            canvasRoot.transform.SetParent(transform, false);
+            var canvas = canvasRoot.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            canvasGo.AddComponent<GraphicRaycaster>();
+            UiFactory.ConfigureScaler(canvasRoot.AddComponent<CanvasScaler>());
+            canvasRoot.AddComponent<GraphicRaycaster>();
 
-            titleText = CreateText(canvasGo.transform, "Knight Run", 42, TextAnchor.UpperCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f));
-            phaseText = CreateText(canvasGo.transform, "Floresta Encantada", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -90f));
-            healthText = CreateText(canvasGo.transform, "Vida: 100", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -130f));
-            enemiesDefeatedText = CreateText(canvasGo.transform, "Inimigos: 0", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -170f));
-            scoreText = CreateText(canvasGo.transform, "Score: 0", 28, TextAnchor.UpperRight, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, -90f));
-            hintText = CreateText(canvasGo.transform, "Clique na aba Game | A/D: mover | Espaco: pular | S: deslizar | Enter: iniciar | R: reiniciar", 18, TextAnchor.LowerCenter, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f));
-            stateText = CreateText(canvasGo.transform, "Clique na aba Game e pressione ENTER", 30, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero);
+            titleText = CreateText(canvasRoot.transform, "Knight Run", 42, TextAnchor.UpperCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f));
+            phaseText = CreateText(canvasRoot.transform, "Floresta Encantada", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -90f));
+            healthText = CreateText(canvasRoot.transform, "Vida: 100", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -130f));
+            enemiesDefeatedText = CreateText(canvasRoot.transform, "Inimigos: 0", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -170f));
+            BuildXpBar(canvasRoot.transform);
+            scoreText = CreateText(canvasRoot.transform, "Score: 0", 28, TextAnchor.UpperRight, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, -90f));
+            UiFactory.CreateAnchoredButton(
+                canvasRoot.transform,
+                "PAUSAR",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-20f, -135f),
+                new Vector2(120f, 44f),
+                TogglePause,
+                20).GetComponent<Button>();
+            hintText = CreateText(canvasRoot.transform, "A/D: mover | Espaco: pular | S: deslizar | P: pausar | M: menu", 18, TextAnchor.LowerCenter, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f));
+            stateText = CreateText(canvasRoot.transform, string.Empty, 30, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero);
+            BuildPausePanel(canvasRoot.transform);
 
             gameManager = GameManager.Instance;
             phaseManager = RunPhaseManager.Instance;
@@ -57,6 +80,25 @@ namespace KnightRun.UI
                 knightHealth.OnHealthChanged += UpdateHealth;
                 UpdateHealth(knightHealth.CurrentHealth, knightHealth.MaxHealth);
             }
+
+            upgradeManager = UpgradeManager.Instance;
+            if (upgradeManager != null)
+            {
+                upgradeManager.OnXpChanged += UpdateXpBar;
+                UpdateXpBar(upgradeManager.XpTowardNextLevel, upgradeManager.XpRequiredForNextLevel);
+            }
+        }
+
+        public void Show()
+        {
+            if (canvasRoot != null)
+                canvasRoot.SetActive(true);
+        }
+
+        public void Hide()
+        {
+            if (canvasRoot != null)
+                canvasRoot.SetActive(false);
         }
 
         void Update()
@@ -64,11 +106,20 @@ namespace KnightRun.UI
             if (gameManager == null)
                 return;
 
-            if (gameManager.State == GameState.Ready && KnightInput.GetKeyDown(KeyCode.Return))
-                gameManager.StartRun();
+            if (gameManager.State == GameState.Running && (KnightInput.GetKeyDown(KeyCode.P) || KnightInput.GetKeyDown(KeyCode.Escape)))
+                gameManager.PauseRun();
+
+            if (gameManager.State == GameState.Paused && (KnightInput.GetKeyDown(KeyCode.P) || KnightInput.GetKeyDown(KeyCode.Escape)))
+                gameManager.ResumeRun();
+
+            if (gameManager.State == GameState.Running && KnightInput.GetKeyDown(KeyCode.M))
+                GameBootstrap.ReturnToMainMenu();
 
             if (gameManager.State == GameState.GameOver && KnightInput.GetKeyDown(KeyCode.R))
-                GameBootstrap.RestartGame();
+                GameBootstrap.StartRunFromMenu();
+
+            if (gameManager.State == GameState.GameOver && KnightInput.GetKeyDown(KeyCode.M))
+                GameBootstrap.ReturnToMainMenu();
         }
 
         void OnDestroy()
@@ -85,6 +136,9 @@ namespace KnightRun.UI
 
             if (knightHealth != null)
                 knightHealth.OnHealthChanged -= UpdateHealth;
+
+            if (upgradeManager != null)
+                upgradeManager.OnXpChanged -= UpdateXpBar;
         }
 
         void UpdateScore(int score)
@@ -105,6 +159,105 @@ namespace KnightRun.UI
                 enemiesDefeatedText.text = $"Inimigos: {count}";
         }
 
+        void UpdateXpBar(int current, int required)
+        {
+            if (xpBarFill != null)
+                xpBarFill.fillAmount = required > 0 ? Mathf.Clamp01((float)current / required) : 0f;
+
+            if (xpBarText != null)
+                xpBarText.text = $"XP {current}/{required}";
+        }
+
+        void BuildXpBar(Transform parent)
+        {
+            var backgroundGo = new GameObject("XpBarBackground");
+            backgroundGo.transform.SetParent(parent, false);
+
+            var backgroundRect = backgroundGo.AddComponent<RectTransform>();
+            backgroundRect.anchorMin = new Vector2(0.5f, 1f);
+            backgroundRect.anchorMax = new Vector2(0.5f, 1f);
+            backgroundRect.pivot = new Vector2(0.5f, 1f);
+            backgroundRect.anchoredPosition = new Vector2(0f, -205f);
+            backgroundRect.sizeDelta = new Vector2(520f, 24f);
+
+            var backgroundImage = backgroundGo.AddComponent<Image>();
+            backgroundImage.color = new Color(0.08f, 0.1f, 0.16f, 0.92f);
+            backgroundImage.raycastTarget = false;
+
+            var fillGo = new GameObject("XpBarFill");
+            fillGo.transform.SetParent(backgroundGo.transform, false);
+
+            var fillRect = fillGo.AddComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(2f, 2f);
+            fillRect.offsetMax = new Vector2(-2f, -2f);
+
+            xpBarFill = fillGo.AddComponent<Image>();
+            xpBarFill.color = new Color(0.4f, 0.82f, 1f, 0.95f);
+            xpBarFill.type = Image.Type.Filled;
+            xpBarFill.fillMethod = Image.FillMethod.Horizontal;
+            xpBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            xpBarFill.fillAmount = 0f;
+            xpBarFill.raycastTarget = false;
+
+            var textGo = new GameObject("XpBarText");
+            textGo.transform.SetParent(backgroundGo.transform, false);
+
+            var textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            xpBarText = textGo.AddComponent<Text>();
+            xpBarText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            xpBarText.fontSize = 15;
+            xpBarText.alignment = TextAnchor.MiddleCenter;
+            xpBarText.color = Color.white;
+            xpBarText.raycastTarget = false;
+            xpBarText.text = "XP 0/1";
+        }
+
+        void TogglePause()
+        {
+            gameManager?.TogglePause();
+        }
+
+        void BuildPausePanel(Transform parent)
+        {
+            pausePanel = UiFactory.CreatePanel(parent, "PausePanel", new Color(0f, 0f, 0f, 0.72f));
+            pausePanel.SetActive(false);
+
+            pauseTitleText = UiFactory.CreateText(
+                pausePanel.transform,
+                "PAUSADO",
+                48,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 60f),
+                new Vector2(500f, 90f));
+
+            UiFactory.CreateAnchoredButton(
+                pausePanel.transform,
+                "CONTINUAR",
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -30f),
+                new Vector2(280f, 56f),
+                TogglePause);
+
+            UiFactory.CreateAnchoredButton(
+                pausePanel.transform,
+                "MENU",
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -110f),
+                new Vector2(280f, 56f),
+                GameBootstrap.ReturnToMainMenu);
+        }
+
         void UpdatePhase(RunPhase phase, RunPhaseSettings settings)
         {
             if (phaseText != null)
@@ -118,20 +271,32 @@ namespace KnightRun.UI
 
             switch (state)
             {
+                case GameState.MainMenu:
+                    stateText.text = string.Empty;
+                    hintText.enabled = false;
+                    break;
                 case GameState.Ready:
-                    stateText.text = "Pressione ENTER para correr!";
+                    stateText.text = string.Empty;
                     hintText.enabled = true;
                     break;
                 case GameState.Running:
                     stateText.text = string.Empty;
                     hintText.enabled = true;
+                    if (pausePanel != null)
+                        pausePanel.SetActive(false);
+                    break;
+                case GameState.Paused:
+                    stateText.text = string.Empty;
+                    hintText.enabled = false;
+                    if (pausePanel != null)
+                        pausePanel.SetActive(true);
                     break;
                 case GameState.ChoosingUpgrade:
                     stateText.text = string.Empty;
                     hintText.enabled = false;
                     break;
                 case GameState.GameOver:
-                    stateText.text = "Game Over!\nPressione R para reiniciar";
+                    stateText.text = "Game Over!\nMoedas salvas!\nR = jogar de novo | M = menu";
                     hintText.enabled = false;
                     break;
             }

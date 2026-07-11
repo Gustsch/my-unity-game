@@ -1,3 +1,4 @@
+using KnightRun.Core;
 using KnightRun.Progression;
 using KnightRun.World;
 using UnityEngine;
@@ -48,6 +49,10 @@ namespace KnightRun.Gameplay
             if (exploded)
                 return;
 
+            GameManager gameManager = GameManager.Instance;
+            if (gameManager == null || gameManager.State != GameState.Running)
+                return;
+
             timer += Time.deltaTime;
             float t = Mathf.Clamp01(timer / ThrowDuration);
 
@@ -85,9 +90,7 @@ namespace KnightRun.Gameplay
                 if (hit.CompareTag("Player"))
                     continue;
 
-                Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
-                if (enemy != null)
-                    enemy.TakeDamage(damage);
+                CombatTarget.TryApplyDamage(hit, damage);
             }
 
             Destroy(gameObject);

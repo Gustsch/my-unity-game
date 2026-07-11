@@ -1,3 +1,4 @@
+using KnightRun.Meta;
 using KnightRun.Core;
 using KnightRun.Gameplay;
 using KnightRun.Progression;
@@ -33,7 +34,8 @@ namespace KnightRun.Player
         static readonly Quaternion IdleRotation = Quaternion.Euler(-20f, 70f, 0f);
         static readonly Quaternion SlashRotation = Quaternion.Euler(-20f, -70f, 0f);
 
-        float AttackSpeedMultiplier => UpgradeStats != null ? UpgradeStats.AttackSpeedMultiplier : 1f;
+        float AttackSpeedMultiplier =>
+            (UpgradeStats != null ? UpgradeStats.AttackSpeedMultiplier : 1f) * MetaBonuses.AttackSpeedMultiplier;
 
         float AttackInterval =>
             Mathf.Max(MinAttackInterval, BaseAttackInterval / AttackSpeedMultiplier);
@@ -164,18 +166,20 @@ namespace KnightRun.Player
             center.y = transform.position.y + bodyHeight * 0.5f;
             Vector3 halfExtents = new Vector3(hitWidth * 0.5f, hitHeight * 0.5f, hitDepth * 0.5f);
 
+            int damage = UpgradeStats != null
+                ? UpgradeStats.SwordDamage
+                : SkillPool.GetSwordDamage(SkillPool.StartingSwordLevel);
+
             Collider[] hits = Physics.OverlapBox(center, halfExtents, Quaternion.identity, ~0, QueryTriggerInteraction.Collide);
             foreach (Collider hit in hits)
             {
                 if (hit.CompareTag("Player"))
                     continue;
 
-                Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
-                if (enemy != null)
-                {
-                    int damage = UpgradeStats != null ? UpgradeStats.SwordDamage : SkillPool.StartingSwordLevel;
-                    enemy.TakeDamage(damage);
-                }
+                if (BossProjectile.TryBreak(hit))
+                    continue;
+
+                CombatTarget.TryApplyDamage(hit, damage);
             }
         }
     }

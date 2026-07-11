@@ -1,4 +1,5 @@
 using System;
+using KnightRun.Gameplay;
 using UnityEngine;
 
 namespace KnightRun.Core
@@ -7,8 +8,14 @@ namespace KnightRun.Core
     {
         public static RunPhaseManager Instance { get; private set; }
 
+        public const float PhaseRunDuration = 30f;
+
         public RunPhase CurrentPhase { get; private set; } = RunPhase.Forest;
+        public int CurrentPhaseIndex { get; private set; }
         public RunPhaseSettings CurrentSettings { get; private set; } = RunPhaseDefaults.All[0];
+        public float PhaseRunElapsed { get; private set; }
+        public bool IsPhaseRunComplete => PhaseRunElapsed >= PhaseRunDuration;
+        public bool IsFinalPhase => CurrentPhaseIndex >= RunPhaseDefaults.All.Length - 1;
 
         public event Action<RunPhase, RunPhaseSettings> OnPhaseChanged;
 
@@ -22,47 +29,43 @@ namespace KnightRun.Core
         void Start()
         {
             gameManager = GameManager.Instance;
-            if (gameManager != null)
-                gameManager.OnDistanceChanged += HandleDistanceChanged;
-
-            ApplyPhase(CurrentPhase);
+            ApplyPhaseByIndex(0);
         }
 
-        void OnDestroy()
+        void Update()
         {
-            if (gameManager != null)
-                gameManager.OnDistanceChanged -= HandleDistanceChanged;
-        }
-
-        void HandleDistanceChanged(float distance)
-        {
-            RunPhase next = GetPhaseForDistance(distance);
-            if (next == CurrentPhase)
+            if (gameManager == null || gameManager.State != GameState.Running)
                 return;
 
-            ApplyPhase(next);
+            PhaseBossController bossController = PhaseBossController.Instance;
+            if (bossController != null && bossController.HasSpawnedBossForCurrentPhase)
+                return;
+
+            PhaseRunElapsed += Time.deltaTime;
+            bossController?.TrySpawnBoss();
         }
 
-        RunPhase GetPhaseForDistance(float distance)
+        public void AdvanceToNextPhase()
         {
-            for (int i = RunPhaseDefaults.All.Length - 1; i >= 0; i--)
-            {
-                if (distance >= RunPhaseDefaults.All[i].distanceStart)
-                    return RunPhaseDefaults.All[i].phase;
-            }
+            if (IsFinalPhase)
+                return;
 
-            return RunPhase.Forest;
+            ApplyPhaseByIndex(CurrentPhaseIndex + 1);
         }
 
         public void ResetPhases()
         {
-            ApplyPhase(RunPhase.Forest);
+            PhaseBossController.Instance?.ResetBossState();
+            ApplyPhaseByIndex(0);
         }
 
-        void ApplyPhase(RunPhase phase)
+        void ApplyPhaseByIndex(int phaseIndex)
         {
-            CurrentPhase = phase;
-            CurrentSettings = Array.Find(RunPhaseDefaults.All, s => s.phase == phase);
+            phaseIndex = Mathf.Clamp(phaseIndex, 0, RunPhaseDefaults.All.Length - 1);
+            CurrentPhaseIndex = phaseIndex;
+            PhaseRunElapsed = 0f;
+            CurrentPhase = RunPhaseDefaults.All[phaseIndex].phase;
+            CurrentSettings = RunPhaseDefaults.All[phaseIndex];
             OnPhaseChanged?.Invoke(CurrentPhase, CurrentSettings);
         }
     }

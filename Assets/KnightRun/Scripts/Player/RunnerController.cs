@@ -1,4 +1,5 @@
 using KnightRun;
+using KnightRun.Meta;
 using KnightRun.Core;
 using KnightRun.Progression;
 using UnityEngine;
@@ -33,8 +34,8 @@ namespace KnightRun.Player
         float slideTimer;
         float fallRestartCooldown;
 
-        const float LaneSwitchSpeed = 80f;
-        const float BaseFreeMoveSpeed = 80f;
+        const float LaneSwitchSpeed = 10000f;
+        const float BaseFreeMoveSpeed = 300;
         const float JumpForce = 10f;
         const float Gravity = -32f;
         const float BaseSlideDuration = 0.55f;
@@ -53,7 +54,7 @@ namespace KnightRun.Player
             get
             {
                 float multiplier = upgradeStats != null ? upgradeStats.MoveSpeedMultiplier : 1f;
-                return BaseFreeMoveSpeed * multiplier;
+                return BaseFreeMoveSpeed * multiplier * MetaBonuses.MoveSpeedMultiplier;
             }
         }
 

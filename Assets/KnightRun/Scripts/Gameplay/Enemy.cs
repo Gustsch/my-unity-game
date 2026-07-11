@@ -16,17 +16,32 @@ namespace KnightRun.Gameplay
         float knockdownTimer;
         int maxHealth;
         float currentHealth;
-        int damage;
+        int contactDamage;
+        bool isElite;
+        bool isFrozenTintApplied;
+        float pendingPopupDamage;
+        float popupBatchTimer;
+        float contactCooldownTimer;
+        float pendingKnockbackZ;
 
         public int MaxHealth => maxHealth;
         public float CurrentHealth => currentHealth;
+        public bool IsElite => isElite;
 
-
-        const int Damage = 1;
+        static readonly Color EliteTint = new Color(0.28f, 0.28f, 0.32f);
+        static readonly Color FrozenTint = new Color(0.55f, 0.82f, 1f);
         const float BodySize = 1f;
         const float MoveSpeed = 5f;
         const float DespawnBehindDistance = 10f;
         const float KnockdownDuration = 2.5f;
+        const float HeadPopupHeight = 1.35f;
+        const float PopupBatchInterval = 0.12f;
+        const float ImmediatePopupThreshold = 5f;
+        const float MinKnockbackDistance = 0.1f;
+        const float MaxKnockbackDistance = 0.4f;
+        const float EliteMaxKnockbackDistance = 0.22f;
+        const float KnockbackCloseDistance = 3f;
+        const float KnockbackFarDistance = 18f;
 
         static readonly Vector3 MeshStandPosition = new Vector3(0f, BodySize * 0.5f, 0f);
         static readonly Vector3 MeshStandScale = Vector3.one * BodySize;
@@ -53,11 +68,29 @@ namespace KnightRun.Gameplay
             bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
         }
 
-        public void Initialize(int health)
+        public void Initialize(int health, int damage = EnemyCombatStats.BaseContactDamage, bool elite = false)
         {
             maxHealth = Mathf.Max(1, health);
             currentHealth = maxHealth;
-            gameObject.name = $"Enemy_HP{maxHealth}";
+            contactDamage = Mathf.Max(1, damage);
+            isElite = elite;
+            gameObject.name = elite ? $"Enemy_Elite_HP{maxHealth}" : $"Enemy_HP{maxHealth}";
+
+            if (elite && meshTransform != null)
+                ApplyEliteVisual();
+        }
+
+        void ApplyEliteVisual()
+        {
+            var renderer = meshTransform.GetComponent<Renderer>();
+            if (renderer == null)
+                return;
+
+            Material material = renderer.material;
+            material.color = EliteTint;
+
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", EliteTint);
         }
 
         void Start()
@@ -83,11 +116,30 @@ namespace KnightRun.Gameplay
                 if (knockdownTimer <= 0f)
                     RecoverFromKnockdown();
 
+                UpdateDamagePopupBatch();
+                UpdateFreezeVisual();
+
                 if (transform.position.z < player.position.z - DespawnBehindDistance)
                     Destroy(gameObject);
 
                 return;
             }
+
+            if (EnemyFreezeController.IsActive)
+            {
+                UpdateDamagePopupBatch();
+                UpdateFreezeVisual();
+
+                if (transform.position.z < player.position.z - DespawnBehindDistance)
+                    Destroy(gameObject);
+
+                return;
+            }
+
+            UpdateFreezeVisual();
+
+            if (contactCooldownTimer > 0f)
+                contactCooldownTimer -= Time.deltaTime;
 
             Vector3 target = player.position;
             target.y = transform.position.y;
@@ -100,6 +152,26 @@ namespace KnightRun.Gameplay
                 Destroy(gameObject);
         }
 
+        void LateUpdate()
+        {
+            if (isDead || gameManager == null || gameManager.State != GameState.Running)
+                return;
+
+            if (Mathf.Approximately(pendingKnockbackZ, 0f))
+                return;
+
+            transform.position += new Vector3(0f, 0f, pendingKnockbackZ);
+            pendingKnockbackZ = 0f;
+            ClampToTrack();
+        }
+
+        void ClampToTrack()
+        {
+            Vector3 position = transform.position;
+            position.x = Mathf.Clamp(position.x, RunnerController.TrackMinX, RunnerController.TrackMaxX);
+            transform.position = position;
+        }
+
         void ResolvePlayer()
         {
             var runner = FindFirstObjectByType<RunnerController>();
@@ -109,7 +181,20 @@ namespace KnightRun.Gameplay
 
         void OnTriggerEnter(Collider other)
         {
-            if (isDead || isKnockedDown || !other.CompareTag("Player"))
+            TryDealContactDamage(other);
+        }
+
+        void OnTriggerStay(Collider other)
+        {
+            TryDealContactDamage(other);
+        }
+
+        void TryDealContactDamage(Collider other)
+        {
+            if (isDead || isKnockedDown || EnemyFreezeController.IsActive || !other.CompareTag("Player"))
+                return;
+
+            if (contactCooldownTimer > 0f)
                 return;
 
             var runner = other.GetComponent<RunnerController>();
@@ -123,11 +208,11 @@ namespace KnightRun.Gameplay
             }
 
             KnightHealth health = other.GetComponent<KnightHealth>();
-            if (health != null)
-                health.TakeDamage(Damage);
+            if (health == null)
+                return;
 
-            isDead = true;
-            Destroy(gameObject);
+            health.TakeDamage(contactDamage);
+            contactCooldownTimer = EnemyCombatStats.ContactDamageCooldown;
         }
 
         void KnockDown()
@@ -169,6 +254,49 @@ namespace KnightRun.Gameplay
                 bodyCollider.size = Vector3.one * BodySize;
                 bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
             }
+
+            isFrozenTintApplied = false;
+            if (isElite)
+                ApplyEliteVisual();
+        }
+
+        void UpdateFreezeVisual()
+        {
+            if (meshTransform == null)
+                return;
+
+            if (EnemyFreezeController.IsActive)
+            {
+                if (!isFrozenTintApplied)
+                {
+                    ApplyTint(FrozenTint);
+                    isFrozenTintApplied = true;
+                }
+
+                return;
+            }
+
+            if (!isFrozenTintApplied)
+                return;
+
+            isFrozenTintApplied = false;
+            if (isElite)
+                ApplyEliteVisual();
+            else
+                ApplyTint(Color.white);
+        }
+
+        void ApplyTint(Color color)
+        {
+            var renderer = meshTransform.GetComponent<Renderer>();
+            if (renderer == null)
+                return;
+
+            Material material = renderer.material;
+            material.color = color;
+
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", color);
         }
 
         public void TakeDamage(float damage)
@@ -177,9 +305,72 @@ namespace KnightRun.Gameplay
                 return;
 
             currentHealth -= damage;
+            QueueDamagePopup(damage);
+            ApplyHitKnockback();
 
             if (currentHealth <= 0f)
                 Die();
+        }
+
+        void ApplyHitKnockback()
+        {
+            if (player == null)
+                ResolvePlayer();
+
+            if (player == null)
+                return;
+
+            float maxKnockback = isElite ? EliteMaxKnockbackDistance : MaxKnockbackDistance;
+            float distanceZ = Mathf.Abs(transform.position.z - player.position.z);
+            float closeness = 1f - Mathf.InverseLerp(KnockbackFarDistance, KnockbackCloseDistance, distanceZ);
+            float knockbackStrength = Mathf.Lerp(MinKnockbackDistance, maxKnockback, closeness);
+
+            float pushZ = Mathf.Sign(transform.position.z - player.position.z);
+            if (Mathf.Approximately(pushZ, 0f))
+                pushZ = 1f;
+
+            pendingKnockbackZ += pushZ * knockbackStrength;
+        }
+
+        void QueueDamagePopup(float damage)
+        {
+            if (damage >= ImmediatePopupThreshold)
+            {
+                FlushDamagePopup();
+                SpawnDamagePopup(damage);
+                return;
+            }
+
+            pendingPopupDamage += damage;
+            if (popupBatchTimer <= 0f)
+                popupBatchTimer = PopupBatchInterval;
+        }
+
+        void UpdateDamagePopupBatch()
+        {
+            if (pendingPopupDamage <= 0f || popupBatchTimer <= 0f)
+                return;
+
+            popupBatchTimer -= Time.deltaTime;
+            if (popupBatchTimer <= 0f)
+                FlushDamagePopup();
+        }
+
+        void FlushDamagePopup()
+        {
+            if (pendingPopupDamage <= 0f)
+                return;
+
+            SpawnDamagePopup(pendingPopupDamage);
+            pendingPopupDamage = 0f;
+            popupBatchTimer = 0f;
+        }
+
+        void SpawnDamagePopup(float damage)
+        {
+            Vector3 position = transform.position + Vector3.up * HeadPopupHeight;
+            position.x += Random.Range(-0.12f, 0.12f);
+            FloatingDamageNumber.Spawn(position, damage);
         }
 
         public void TakeDamage(int damage)
@@ -192,14 +383,15 @@ namespace KnightRun.Gameplay
             if (isDead)
                 return;
 
+            FlushDamagePopup();
             isDead = true;
             GameManager.Instance?.AddEnemyDefeated();
+            Vector3 dropPosition = transform.position;
+            ExperienceOrb.Spawn(
+                dropPosition,
+                isElite ? ExperienceOrb.EliteValue : ExperienceOrb.DefaultValue);
+            EnemyLootDrop.TrySpawnSpecialDrop(dropPosition);
             Destroy(gameObject);
-        }
-
-        public void BreakBySword()
-        {
-            TakeDamage(EnemyCombatStats.SwordDamage);
         }
     }
 }

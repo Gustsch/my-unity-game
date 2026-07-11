@@ -1,19 +1,28 @@
+using KnightRun.Core;
 using UnityEngine;
 
 namespace KnightRun.Gameplay
 {
     public static class EnemyCombatStats
     {
-        public const int BaseEnemyHealth = 1;
-        public const int HealthGainPer100Meters = 1;
-        public const int SwordDamage = 1;
-        public const float HealthDistanceStep = 100f;
+        public const int BaseContactDamage = 10;
+        public const float ContactDamageCooldown = 0.75f;
+        public const float EliteSpawnChance = 0.01f;
+        public const int EliteHealthMultiplier = 5;
+        public const int EliteDamageMultiplier = 5;
 
-        public static int GetMaxHealthForDistance(float distance)
+        public static int RollHealthForPhase(RunPhaseSettings settings)
         {
-            // int bonus = Mathf.FloorToInt(distance / HealthDistanceStep);
-            int bonus = 0;
-            return BaseEnemyHealth + bonus * HealthGainPer100Meters;
+            int min = Mathf.Max(1, settings.enemyHealthMin);
+            int max = Mathf.Max(min, settings.enemyHealthMax);
+            return Random.Range(min, max + 1);
+        }
+
+        public static int GetAverageEnemyHealth(RunPhaseSettings settings)
+        {
+            int min = Mathf.Max(1, settings.enemyHealthMin);
+            int max = Mathf.Max(min, settings.enemyHealthMax);
+            return (min + max + 1) / 2;
         }
     }
 }

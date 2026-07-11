@@ -35,6 +35,9 @@ namespace KnightRun.Player
                 case KeyCode.UpArrow: key = Key.UpArrow; return true;
                 case KeyCode.DownArrow: key = Key.DownArrow; return true;
                 case KeyCode.Return: key = Key.Enter; return true;
+                case KeyCode.P: key = Key.P; return true;
+                case KeyCode.Escape: key = Key.Escape; return true;
+                case KeyCode.M: key = Key.M; return true;
                 case KeyCode.R: key = Key.R; return true;
                 case KeyCode.Alpha1: key = Key.Digit1; return true;
                 case KeyCode.Alpha2: key = Key.Digit2; return true;

@@ -1,5 +1,6 @@
 using KnightRun.Core;
 using KnightRun.Gameplay;
+using KnightRun.Meta;
 using KnightRun.Progression;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace KnightRun.Player
                 if (UpgradeStats == null)
                     return SkillPool.BowAttackInterval;
 
-                float speedMultiplier = UpgradeStats.AttackSpeedMultiplier;
+                float speedMultiplier = UpgradeStats.AttackSpeedMultiplier * MetaBonuses.AttackSpeedMultiplier;
                 return Mathf.Max(SkillPool.BowMinAttackInterval, SkillPool.BowAttackInterval / speedMultiplier);
             }
         }

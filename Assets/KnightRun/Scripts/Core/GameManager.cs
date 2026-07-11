@@ -1,12 +1,15 @@
 using System;
+using KnightRun.Meta;
 using UnityEngine;
 
 namespace KnightRun.Core
 {
     public enum GameState
     {
+        MainMenu,
         Ready,
         Running,
+        Paused,
         ChoosingUpgrade,
         GameOver
     }
@@ -15,7 +18,7 @@ namespace KnightRun.Core
     {
         public static GameManager Instance { get; private set; }
 
-        public GameState State { get; private set; } = GameState.Ready;
+        public GameState State { get; private set; } = GameState.MainMenu;
         public float Distance { get; private set; }
         public int Score { get; private set; }
         public int Coins { get; private set; }
@@ -78,7 +81,7 @@ namespace KnightRun.Core
 
         public void AddCoin(int amount = 1)
         {
-            Coins += amount;
+            Coins += Mathf.Max(1, amount);
             Score = Mathf.FloorToInt(Distance * 10f) + Coins * 5;
             OnCoinsChanged?.Invoke(Coins);
             OnScoreChanged?.Invoke(Score);
@@ -95,7 +98,15 @@ namespace KnightRun.Core
             if (State == GameState.GameOver)
                 return;
 
+            MetaProgression.Instance?.BankRun(Coins, Score, Distance, EnemiesDefeated);
             State = GameState.GameOver;
+            OnStateChanged?.Invoke(State);
+        }
+
+        public void EnterMainMenu()
+        {
+            RestartRun();
+            State = GameState.MainMenu;
             OnStateChanged?.Invoke(State);
         }
 
@@ -115,6 +126,32 @@ namespace KnightRun.Core
 
             State = GameState.Running;
             OnStateChanged?.Invoke(State);
+        }
+
+        public void PauseRun()
+        {
+            if (State != GameState.Running)
+                return;
+
+            State = GameState.Paused;
+            OnStateChanged?.Invoke(State);
+        }
+
+        public void ResumeRun()
+        {
+            if (State != GameState.Paused)
+                return;
+
+            State = GameState.Running;
+            OnStateChanged?.Invoke(State);
+        }
+
+        public void TogglePause()
+        {
+            if (State == GameState.Running)
+                PauseRun();
+            else if (State == GameState.Paused)
+                ResumeRun();
         }
 
         public void RestartRun()
