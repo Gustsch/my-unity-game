@@ -16,5 +16,7 @@ namespace KnightRun.Meta
             1f + ShopCatalog.GetLevel(ShopUpgradeId.BaseDamage) * 0.1f;
 
         public static int HealingPerTenKills => ShopCatalog.GetLevel(ShopUpgradeId.Healing) * 10;
+
+        public static int AttackVolleyCount => 1 + ShopCatalog.GetLevel(ShopUpgradeId.MultiStrike);
     }
 }

@@ -11,7 +11,6 @@ namespace KnightRun.Progression
         ThrowingAxe,
         QuickSlash,
         WideArc,
-        MultiStrike,
         Vigor,
         AgileSteps,
         ExtendedSlide,

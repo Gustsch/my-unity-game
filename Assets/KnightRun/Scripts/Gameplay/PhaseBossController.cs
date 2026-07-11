@@ -1,4 +1,5 @@
 using KnightRun.Core;
+using KnightRun.Meta;
 using KnightRun.Player;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace KnightRun.Gameplay
         public const float BossFallbackAheadDistance = 28f;
 
         public bool IsBossFightActive => activeBoss != null;
+        public Boss ActiveBoss => activeBoss;
         public bool HasSpawnedBossForCurrentPhase =>
             phaseManager != null && bossSpawnedForPhaseIndex == phaseManager.CurrentPhaseIndex;
         public bool IsBlockingPhaseAdvance => HasSpawnedBossForCurrentPhase && !bossDefeatedForPhase;
@@ -88,6 +90,7 @@ namespace KnightRun.Gameplay
                 activeBoss = null;
 
             bossDefeatedForPhase = true;
+            CharacterUnlockProgress.MarkBossDefeated(bossSpawnedForPhaseIndex);
             phaseManager?.AdvanceToNextPhase();
         }
 

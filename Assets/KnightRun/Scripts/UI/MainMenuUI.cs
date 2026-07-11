@@ -15,19 +15,27 @@ namespace KnightRun.UI
         GameObject canvasRoot;
         GameObject mainPanel;
         GameObject shopPanel;
+        GameObject charactersPanel;
         GameObject optionsPanel;
         GameObject highScoresPanel;
 
         Text coinsText;
+        Text characterText;
         Text shopCoinsText;
+        Text charactersSummaryText;
         Text optionsText;
         Text highScoresText;
 
         Transform shopItemsRoot;
+        Transform charactersItemsRoot;
         Button shopBackButton;
+        Button charactersBackButton;
+        Button optionsResetButton;
+        bool resetSaveConfirmationPending;
 
         readonly MenuNavigation mainNavigation = new MenuNavigation();
         readonly MenuNavigation shopNavigation = new MenuNavigation();
+        readonly MenuNavigation charactersNavigation = new MenuNavigation();
         readonly MenuNavigation optionsNavigation = new MenuNavigation();
         readonly MenuNavigation highScoresNavigation = new MenuNavigation();
 
@@ -40,6 +48,7 @@ namespace KnightRun.UI
 
             mainPanel = BuildMainPanel(canvasRoot.transform);
             shopPanel = BuildShopPanel(canvasRoot.transform);
+            charactersPanel = BuildCharactersPanel(canvasRoot.transform);
             optionsPanel = BuildOptionsPanel(canvasRoot.transform);
             highScoresPanel = BuildHighScoresPanel(canvasRoot.transform);
 
@@ -47,8 +56,11 @@ namespace KnightRun.UI
             if (metaProgression != null)
                 metaProgression.OnMetaChanged += RefreshMetaDisplay;
 
+            CharacterSelection.OnCharacterChanged += RefreshCharacterDisplay;
+
             ShowMainPanel();
             RefreshMetaDisplay();
+            RefreshCharacterDisplay();
             RefreshShopDisplay();
         }
 
@@ -61,6 +73,8 @@ namespace KnightRun.UI
                 mainNavigation.HandleInput(true);
             else if (shopPanel != null && shopPanel.activeSelf)
                 shopNavigation.HandleInput(true);
+            else if (charactersPanel != null && charactersPanel.activeSelf)
+                charactersNavigation.HandleInput(true);
             else if (optionsPanel != null && optionsPanel.activeSelf)
                 optionsNavigation.HandleInput(true);
             else if (highScoresPanel != null && highScoresPanel.activeSelf)
@@ -69,6 +83,8 @@ namespace KnightRun.UI
             if (KnightInput.GetKeyDown(KeyCode.Escape))
             {
                 if (shopPanel != null && shopPanel.activeSelf)
+                    ShowMainPanel();
+                else if (charactersPanel != null && charactersPanel.activeSelf)
                     ShowMainPanel();
                 else if (optionsPanel != null && optionsPanel.activeSelf)
                     ShowMainPanel();
@@ -81,6 +97,8 @@ namespace KnightRun.UI
         {
             if (metaProgression != null)
                 metaProgression.OnMetaChanged -= RefreshMetaDisplay;
+
+            CharacterSelection.OnCharacterChanged -= RefreshCharacterDisplay;
         }
 
         public void Show()
@@ -89,6 +107,7 @@ namespace KnightRun.UI
                 canvasRoot.SetActive(true);
             ShowMainPanel();
             RefreshMetaDisplay();
+            RefreshCharacterDisplay();
         }
 
         public void Hide()
@@ -107,13 +126,17 @@ namespace KnightRun.UI
             coinsText = UiFactory.CreateText(panel.transform, "Moedas: 0", 24, TextAnchor.UpperCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -120f), new Vector2(500f, 50f));
 
+            characterText = UiFactory.CreateText(panel.transform, "Personagem: Cavaleiro", 22, TextAnchor.UpperCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -155f), new Vector2(500f, 40f));
+
             var buttons = new List<Button>
             {
-                UiFactory.CreateButton(panel.transform, "PLAY", new Vector2(0f, 80f), () => GameBootstrap.StartRunFromMenu()),
-                UiFactory.CreateButton(panel.transform, "SHOP", new Vector2(0f, 10f), ShowShopPanel),
-                UiFactory.CreateButton(panel.transform, "OPTIONS", new Vector2(0f, -60f), ShowOptionsPanel),
-                UiFactory.CreateButton(panel.transform, "HIGHSCORES", new Vector2(0f, -130f), ShowHighScoresPanel),
-                UiFactory.CreateButton(panel.transform, "EXIT", new Vector2(0f, -200f), ExitGame)
+                UiFactory.CreateButton(panel.transform, "PLAY", new Vector2(0f, 70f), () => GameBootstrap.StartRunFromMenu()),
+                UiFactory.CreateButton(panel.transform, "PERSONAGENS", new Vector2(0f, 0f), ShowCharactersPanel),
+                UiFactory.CreateButton(panel.transform, "SHOP", new Vector2(0f, -70f), ShowShopPanel),
+                UiFactory.CreateButton(panel.transform, "OPTIONS", new Vector2(0f, -140f), ShowOptionsPanel),
+                UiFactory.CreateButton(panel.transform, "HIGHSCORES", new Vector2(0f, -210f), ShowHighScoresPanel),
+                UiFactory.CreateButton(panel.transform, "EXIT", new Vector2(0f, -280f), ExitGame)
             };
             mainNavigation.SetButtons(buttons);
 
@@ -146,6 +169,32 @@ namespace KnightRun.UI
             return panel;
         }
 
+        GameObject BuildCharactersPanel(Transform parent)
+        {
+            var panel = UiFactory.CreatePanel(parent, "CharactersPanel", new Color(0.05f, 0.08f, 0.12f, 0.96f));
+            panel.SetActive(false);
+
+            UiFactory.CreateText(panel.transform, "PERSONAGENS", 48, TextAnchor.UpperCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(700f, 80f));
+
+            charactersSummaryText = UiFactory.CreateText(panel.transform, string.Empty, 22, TextAnchor.UpperCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -95f), new Vector2(700f, 50f));
+
+            charactersItemsRoot = UiFactory.CreateScrollArea(panel.transform, "CharactersScroll", 150f, 90f);
+
+            charactersBackButton = UiFactory.CreateAnchoredButton(
+                panel.transform,
+                "Voltar",
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 40f),
+                new Vector2(320f, 56f),
+                ShowMainPanel).GetComponent<Button>();
+
+            charactersNavigation.SetButtons(new[] { charactersBackButton });
+            return panel;
+        }
+
         GameObject BuildOptionsPanel(Transform parent)
         {
             var panel = UiFactory.CreatePanel(parent, "OptionsPanel", new Color(0.05f, 0.08f, 0.12f, 0.96f));
@@ -157,8 +206,18 @@ namespace KnightRun.UI
             optionsText = UiFactory.CreateText(panel.transform, string.Empty, 24, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(760f, 320f));
 
+            optionsResetButton = UiFactory.CreateAnchoredButton(
+                panel.transform,
+                "RESETAR SAVE",
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 110f),
+                new Vector2(320f, 56f),
+                HandleResetSaveClick).GetComponent<Button>();
+
             optionsNavigation.SetButtons(new[]
             {
+                optionsResetButton,
                 UiFactory.CreateAnchoredButton(
                     panel.transform,
                     "Voltar",
@@ -201,6 +260,7 @@ namespace KnightRun.UI
             SetPanelActive(mainPanel);
             mainNavigation.RefreshVisuals();
             RefreshMetaDisplay();
+            RefreshCharacterDisplay();
         }
 
         void ShowShopPanel()
@@ -210,8 +270,17 @@ namespace KnightRun.UI
             RefreshShopDisplay();
         }
 
+        void ShowCharactersPanel()
+        {
+            SetPanelActive(charactersPanel);
+            charactersNavigation.RefreshVisuals();
+            RefreshCharactersDisplay();
+        }
+
         void ShowOptionsPanel()
         {
+            resetSaveConfirmationPending = false;
+            UpdateResetSaveButtonLabel();
             SetPanelActive(optionsPanel);
             optionsNavigation.RefreshVisuals();
             RefreshOptionsDisplay();
@@ -228,6 +297,7 @@ namespace KnightRun.UI
         {
             if (mainPanel != null) mainPanel.SetActive(mainPanel == activePanel);
             if (shopPanel != null) shopPanel.SetActive(shopPanel == activePanel);
+            if (charactersPanel != null) charactersPanel.SetActive(charactersPanel == activePanel);
             if (optionsPanel != null) optionsPanel.SetActive(optionsPanel == activePanel);
             if (highScoresPanel != null) highScoresPanel.SetActive(highScoresPanel == activePanel);
         }
@@ -237,6 +307,19 @@ namespace KnightRun.UI
             int coins = metaProgression != null ? metaProgression.TotalCoins : 0;
             if (coinsText != null)
                 coinsText.text = $"Moedas: {coins}";
+
+            if (charactersPanel != null && charactersPanel.activeSelf)
+                RefreshCharactersDisplay();
+        }
+
+        void RefreshCharacterDisplay()
+        {
+            CharacterDefinition character = CharacterCatalog.Get(CharacterSelection.SelectedCharacter);
+            if (characterText != null)
+                characterText.text = $"Personagem: {character.DisplayName}";
+
+            if (charactersPanel != null && charactersPanel.activeSelf)
+                RefreshCharactersDisplay();
         }
 
         void RefreshShopDisplay()
@@ -281,13 +364,143 @@ namespace KnightRun.UI
                 shopNavigation.RefreshVisuals();
         }
 
+        void RefreshCharactersDisplay()
+        {
+            int coins = metaProgression != null ? metaProgression.TotalCoins : 0;
+            CharacterDefinition selected = CharacterCatalog.Get(CharacterSelection.SelectedCharacter);
+            if (charactersSummaryText != null)
+                charactersSummaryText.text = $"Moedas: {coins} | Selecionado: {selected.DisplayName} ({selected.WeaponName})";
+
+            if (charactersItemsRoot == null)
+                return;
+
+            for (int i = charactersItemsRoot.childCount - 1; i >= 0; i--)
+                Destroy(charactersItemsRoot.GetChild(i).gameObject);
+
+            var characterButtons = new List<Button>();
+            foreach (CharacterDefinition character in CharacterCatalog.All)
+            {
+                HeroCharacterId characterId = character.Id;
+                string label = BuildCharacterButtonLabel(character);
+
+                characterButtons.Add(UiFactory.CreateLayoutButton(
+                    charactersItemsRoot,
+                    label,
+                    () => HandleCharacterAction(characterId),
+                    96f,
+                    20));
+            }
+
+            if (charactersBackButton != null)
+                characterButtons.Add(charactersBackButton);
+
+            charactersNavigation.SetButtons(characterButtons);
+            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)charactersItemsRoot);
+            if (charactersPanel != null && charactersPanel.activeSelf)
+                charactersNavigation.RefreshVisuals();
+        }
+
+        static string BuildCharacterButtonLabel(CharacterDefinition character)
+        {
+            bool isSelected = CharacterSelection.SelectedCharacter == character.Id;
+            bool isOwned = CharacterOwnership.IsOwned(character.Id);
+            bool isUnlocked = CharacterCatalog.IsUnlockedForPurchase(character.Id);
+
+            if (!isUnlocked)
+            {
+                return
+                    $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nBloqueado: {CharacterCatalog.GetUnlockRequirementText(character.Id)}";
+            }
+
+            if (!isOwned)
+            {
+                return
+                    $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nComprar: {character.PurchaseCost} moedas";
+            }
+
+            if (isSelected)
+            {
+                return
+                    $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nSELECIONADO";
+            }
+
+            return
+                $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nSelecionar";
+        }
+
+        void HandleCharacterAction(HeroCharacterId id)
+        {
+            if (CharacterOwnership.IsOwned(id))
+            {
+                SelectCharacter(id);
+                return;
+            }
+
+            if (!CharacterCatalog.IsUnlockedForPurchase(id))
+                return;
+
+            if (metaProgression == null)
+                return;
+
+            if (metaProgression.TryPurchaseCharacter(id))
+            {
+                SelectCharacter(id);
+                RefreshMetaDisplay();
+                RefreshCharactersDisplay();
+            }
+        }
+
+        void SelectCharacter(HeroCharacterId id)
+        {
+            CharacterSelection.Select(id);
+            RefreshCharacterDisplay();
+        }
+
         void RefreshOptionsDisplay()
         {
             if (optionsText == null)
                 return;
 
+            if (resetSaveConfirmationPending)
+            {
+                optionsText.text =
+                    "ATENCAO: isso apaga moedas, upgrades da loja e high scores.\nClique em CONFIRMAR RESET para continuar.";
+                return;
+            }
+
             optionsText.text =
                 "Menu: setas/W/S + Enter | clique no botao\nRun: A/D mover | Espaco pular | S / deslizar\nUpgrades: setas + Enter, 1/2/3 ou clique\nM - menu | R - reiniciar run";
+        }
+
+        void HandleResetSaveClick()
+        {
+            if (!resetSaveConfirmationPending)
+            {
+                resetSaveConfirmationPending = true;
+                UpdateResetSaveButtonLabel();
+                RefreshOptionsDisplay();
+                optionsNavigation.RefreshVisuals();
+                return;
+            }
+
+            resetSaveConfirmationPending = false;
+            metaProgression?.ResetAllSaveData();
+            UpdateResetSaveButtonLabel();
+            RefreshOptionsDisplay();
+            RefreshShopDisplay();
+            RefreshCharacterDisplay();
+            RefreshHighScoresDisplay();
+            optionsNavigation.RefreshVisuals();
+        }
+
+        void UpdateResetSaveButtonLabel()
+        {
+            if (optionsResetButton == null)
+                return;
+
+            Text label = optionsResetButton.GetComponentInChildren<Text>();
+            if (label != null)
+                label.text = resetSaveConfirmationPending ? "CONFIRMAR RESET" : "RESETAR SAVE";
         }
 
         void RefreshHighScoresDisplay()

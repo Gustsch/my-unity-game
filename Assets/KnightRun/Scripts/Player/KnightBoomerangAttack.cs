@@ -21,7 +21,7 @@ namespace KnightRun.Player
                     return SkillPool.BoomerangBaseSpeed;
 
                 float speedMultiplier = UpgradeStats.AttackSpeedMultiplier * MetaBonuses.AttackSpeedMultiplier;
-                return SkillPool.BoomerangBaseSpeed * speedMultiplier;
+                return SkillPool.BoomerangBaseSpeed * speedMultiplier * RunForwardMotion.GetPhaseSpeedMultiplier();
             }
         }
 

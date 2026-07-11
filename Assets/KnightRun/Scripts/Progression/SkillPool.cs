@@ -37,11 +37,11 @@ namespace KnightRun.Progression
         public const float BombAttackInterval = 2f;
         public const float BombBaseDamage = 20f;
         public const float BombMinAttackInterval = 0.8f;
-        public const float BombFixedThrowDistance = 15f;
+        public const float BombFixedThrowDistance = 25f;
         public const float BombBaseExplosionRadius = 2f;
         public const float BoomerangBaseDamage = 20f;
         public const float BoomerangDamagePerLevel = 5f;
-        public const float BoomerangBaseSpeed = 22f;
+        public const float BoomerangBaseSpeed = 34f;
         public const float ThrowingAxeAttackInterval = 3f;
         public const float ThrowingAxeMinAttackInterval = 1.6f;
         public const float ThrowingAxeBaseDamage = 30f;
@@ -60,7 +60,6 @@ namespace KnightRun.Progression
             new SkillDefinition { Id = HeroSkillId.ThrowingAxe, DisplayName = "Machado de Arremesso", Category = UpgradeCategory.Weapon },
             new SkillDefinition { Id = HeroSkillId.QuickSlash, DisplayName = "Golpe Rapido", Category = UpgradeCategory.Skill },
             new SkillDefinition { Id = HeroSkillId.WideArc, DisplayName = "Arco Amplo", Category = UpgradeCategory.Skill },
-            new SkillDefinition { Id = HeroSkillId.MultiStrike, DisplayName = "Ataque Multiplo", Category = UpgradeCategory.Skill },
             new SkillDefinition { Id = HeroSkillId.Vigor, DisplayName = "Vigor", Category = UpgradeCategory.Skill },
             new SkillDefinition { Id = HeroSkillId.AgileSteps, DisplayName = "Passos Ageis", Category = UpgradeCategory.Skill },
             new SkillDefinition { Id = HeroSkillId.ExtendedSlide, DisplayName = "Slide Prolongado", Category = UpgradeCategory.Skill },
@@ -82,7 +81,9 @@ namespace KnightRun.Progression
         {
             return id switch
             {
-                HeroSkillId.Sword => "+10 dano da espada",
+                HeroSkillId.Sword => nextLevel == 1
+                    ? "Desbloqueia a espada corpo a corpo e o corte a distancia"
+                    : "+10 dano da espada",
                 HeroSkillId.Bow => nextLevel == 1
                     ? "Desbloqueia flechas que acertam 1 inimigo"
                     : "+10 dano da flecha",
@@ -103,7 +104,6 @@ namespace KnightRun.Progression
                     : $"+{ThrowingAxeDamagePerLevel:0.#} dano do machado",
                 HeroSkillId.QuickSlash => $"+{QuickSlashSpeedPerLevel * 100f:0.#}% velocidade de ataque",
                 HeroSkillId.WideArc => $"+{WideArcAreaPerLevel * 100f:0.#}% area do ataque",
-                HeroSkillId.MultiStrike => "+1 ataque por vez",
                 HeroSkillId.Vigor => $"+{VigorHealthPerLevel} HP maximo",
                 HeroSkillId.AgileSteps => $"+{AgileStepsSpeedPerLevel * 100f:0.#}% velocidade de movimento",
                 HeroSkillId.ExtendedSlide => $"+{ExtendedSlideDurationPerLevel * 100f:0.#}% duracao do slide",

@@ -22,6 +22,8 @@ namespace KnightRun.Meta
         public void Load()
         {
             TotalCoins = PlayerPrefs.GetInt(CoinsKey, 0);
+            CharacterUnlockProgress.Load();
+            CharacterSelection.Load();
             HighScoreTable.Load();
             OnMetaChanged?.Invoke();
         }
@@ -52,6 +54,39 @@ namespace KnightRun.Meta
             PlayerPrefs.Save();
             OnMetaChanged?.Invoke();
             return true;
+        }
+
+        public bool TryPurchaseCharacter(HeroCharacterId id)
+        {
+            if (CharacterOwnership.IsOwned(id))
+                return false;
+
+            if (!CharacterCatalog.IsUnlockedForPurchase(id))
+                return false;
+
+            int cost = CharacterCatalog.Get(id).PurchaseCost;
+            if (TotalCoins < cost)
+                return false;
+
+            TotalCoins -= cost;
+            CharacterOwnership.SetOwned(id);
+            PlayerPrefs.SetInt(CoinsKey, TotalCoins);
+            PlayerPrefs.Save();
+            OnMetaChanged?.Invoke();
+            return true;
+        }
+
+        public void ResetAllSaveData()
+        {
+            TotalCoins = 0;
+            PlayerPrefs.DeleteKey(CoinsKey);
+            ShopCatalog.ResetAll();
+            HighScoreTable.Clear();
+            CharacterUnlockProgress.Reset();
+            CharacterOwnership.Reset();
+            CharacterSelection.ResetToDefault();
+            PlayerPrefs.Save();
+            OnMetaChanged?.Invoke();
         }
     }
 }

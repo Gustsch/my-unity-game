@@ -6,9 +6,9 @@ namespace KnightRun.Gameplay
 {
     public class ArrowProjectile : MonoBehaviour
     {
-        const float Speed = 28f;
-        const float MaxLifetime = 4f;
-        const float MaxTravelDistance = 45f;
+        const float Speed = 40f;
+        const float MaxLifetime = 7f;
+        const float BaseMaxTravelDistance = 100f;
         const float BaseHitWidth = 0.35f;
         const float BaseHitDepth = 0.9f;
         const float HitboxHeight = 8f;
@@ -20,6 +20,8 @@ namespace KnightRun.Gameplay
         float damage;
         float areaMultiplier;
         float lifetime;
+        float ownTravelDistance;
+        float maxTravelDistance;
         bool hasHit;
 
         public static ArrowProjectile Spawn(Vector3 position, float damage, float areaMultiplier)
@@ -50,6 +52,7 @@ namespace KnightRun.Gameplay
             arrow.startPosition = position;
             arrow.damage = Mathf.Max(0.01f, damage);
             arrow.areaMultiplier = areaMultiplier;
+            arrow.maxTravelDistance = RunForwardMotion.GetScaledProjectileRange(BaseMaxTravelDistance);
             return arrow;
         }
 
@@ -71,8 +74,9 @@ namespace KnightRun.Gameplay
 
             transform.position += Vector3.forward * Speed * Time.deltaTime;
             transform.position += RunForwardMotion.GetDelta();
+            ownTravelDistance += Speed * Time.deltaTime;
 
-            if ((transform.position - startPosition).sqrMagnitude >= MaxTravelDistance * MaxTravelDistance)
+            if (ownTravelDistance >= maxTravelDistance)
             {
                 Destroy(gameObject);
                 return;

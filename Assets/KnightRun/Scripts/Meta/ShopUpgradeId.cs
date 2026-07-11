@@ -8,5 +8,6 @@ namespace KnightRun.Meta
         Ressurection,
         BaseDamage,
         Healing,
+        MultiStrike,
     }
 }

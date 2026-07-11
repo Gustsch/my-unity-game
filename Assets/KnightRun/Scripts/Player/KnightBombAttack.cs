@@ -91,12 +91,15 @@ namespace KnightRun.Player
             Vector3 throwOrigin = bombVisual != null
                 ? bombVisual.ThrowPosition
                 : transform.position + Vector3.up * 1.1f;
+            bool targetBoss = TryGetBossLandPosition(out Vector3 bossLandPosition);
 
             for (int i = 0; i < volleyCount; i++)
             {
                 float spread = (i - (volleyCount - 1) * 0.5f) * VolleySpread;
                 Vector3 from = throwOrigin + new Vector3(spread * 0.25f, 0f, 0f);
-                Vector3 landPosition = transform.position + new Vector3(spread, 0f, SkillPool.BombFixedThrowDistance);
+                Vector3 landPosition = targetBoss
+                    ? bossLandPosition + new Vector3(spread, 0f, 0f)
+                    : transform.position + new Vector3(spread, 0f, GetDefaultThrowDistance());
 
                 BombProjectile.Throw(
                     from,
@@ -104,6 +107,23 @@ namespace KnightRun.Player
                     UpgradeStats.BombDamage,
                     UpgradeStats.AttackAreaMultiplier);
             }
+        }
+
+        static bool TryGetBossLandPosition(out Vector3 landPosition)
+        {
+            landPosition = default;
+            Boss boss = PhaseBossController.Instance?.ActiveBoss;
+            if (boss == null)
+                return false;
+
+            Vector3 bossPosition = boss.transform.position;
+            landPosition = new Vector3(bossPosition.x, 0f, bossPosition.z);
+            return true;
+        }
+
+        static float GetDefaultThrowDistance()
+        {
+            return SkillPool.BombFixedThrowDistance * RunForwardMotion.GetPhaseSpeedMultiplier();
         }
     }
 }

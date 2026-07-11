@@ -170,15 +170,12 @@ namespace KnightRun.World
             enemy.Build();
 
             int health = EnemyCombatStats.RollHealthForPhase(settings);
-            int damage = EnemyCombatStats.BaseContactDamage;
             bool isElite = Random.value < EnemyCombatStats.EliteSpawnChance;
 
             if (isElite)
-            {
                 health *= EnemyCombatStats.EliteHealthMultiplier;
-                damage *= EnemyCombatStats.EliteDamageMultiplier;
-            }
 
+            int damage = EnemyCombatStats.GetContactDamageForHealth(health);
             enemy.Initialize(health, damage, isElite);
         }
 

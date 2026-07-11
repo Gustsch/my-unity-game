@@ -146,7 +146,11 @@ namespace KnightRun.Gameplay
 
             Vector3 offset = target - transform.position;
             if (offset.sqrMagnitude > 0.01f)
-                transform.position += offset.normalized * MoveSpeed * Time.deltaTime;
+            {
+                Vector3 delta = offset.normalized * MoveSpeed * Time.deltaTime;
+                delta.x *= RunForwardMotion.GetEnemyHorizontalMoveScale();
+                transform.position += delta;
+            }
 
             if (transform.position.z < player.position.z - DespawnBehindDistance)
                 Destroy(gameObject);

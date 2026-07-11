@@ -66,28 +66,48 @@ namespace KnightRun.Player
 
             var stats = UpgradeStats;
             if (stats != null)
-                stats.OnBonusesChanged += UpdateSwordVisualScale;
+                stats.OnBonusesChanged += UpdateSwordState;
 
-            UpdateSwordVisualScale();
+            UpdateSwordState();
         }
 
         void OnDestroy()
         {
             if (upgradeStats != null)
-                upgradeStats.OnBonusesChanged -= UpdateSwordVisualScale;
+                upgradeStats.OnBonusesChanged -= UpdateSwordState;
         }
 
-        void UpdateSwordVisualScale()
+        void UpdateSwordState()
         {
             if (swordVisual == null || UpgradeStats == null)
                 return;
 
-            swordVisual.SetAttackAreaMultiplier(UpgradeStats.AttackAreaMultiplier);
+            bool hasSword = UpgradeStats.HasSword;
+            swordVisual.SetVisible(hasSword);
+
+            if (hasSword)
+                swordVisual.SetAttackAreaMultiplier(UpgradeStats.AttackAreaMultiplier);
+            else if (isSwinging)
+                CancelSwing();
+        }
+
+        void CancelSwing()
+        {
+            isSwinging = false;
+            swingTimer = 0f;
+            hitApplied = false;
+            remainingVolleySwings = 0;
+
+            if (swordVisual != null && swordVisual.Pivot != null)
+                swordVisual.Pivot.localRotation = IdleRotation;
         }
 
         void Update()
         {
             if (gameManager == null || gameManager.State != GameState.Running)
+                return;
+
+            if (UpgradeStats == null || !UpgradeStats.HasSword)
                 return;
 
             if (isSwinging)
@@ -170,6 +190,8 @@ namespace KnightRun.Player
                 ? UpgradeStats.SwordDamage
                 : SkillPool.GetSwordDamage(SkillPool.StartingSwordLevel);
 
+            SpawnSlashProjectile(damage, areaMultiplier);
+
             Collider[] hits = Physics.OverlapBox(center, halfExtents, Quaternion.identity, ~0, QueryTriggerInteraction.Collide);
             foreach (Collider hit in hits)
             {
@@ -181,6 +203,15 @@ namespace KnightRun.Player
 
                 CombatTarget.TryApplyDamage(hit, damage);
             }
+        }
+
+        void SpawnSlashProjectile(int damage, float areaMultiplier)
+        {
+            Vector3 spawnPosition = transform.position
+                + Vector3.forward * (body.radius + 0.35f)
+                + Vector3.up * (AttackHitHeight * 0.55f);
+
+            SwordSlashProjectile.Spawn(spawnPosition, damage, areaMultiplier);
         }
     }
 }

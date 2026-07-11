@@ -7,10 +7,11 @@ namespace KnightRun.Gameplay
 {
     public class BoomerangProjectile : MonoBehaviour
     {
-        const float MaxLifetime = 8f;
+        const float MaxLifetime = 14f;
         const float BaseHitRadius = 0.45f;
         const float HitboxHeight = 8f;
         const float ReturnArrivalDistance = 0.55f;
+        const float PhaseSpeedBoost = 0.65f;
 
         enum Phase
         {
@@ -52,7 +53,7 @@ namespace KnightRun.Gameplay
             projectile.player = player;
             projectile.target = target;
             projectile.damage = Mathf.Max(0.01f, damage);
-            projectile.speed = Mathf.Max(4f, speed);
+            projectile.speed = Mathf.Max(4f, speed * (1f + (RunForwardMotion.GetPhaseSpeedMultiplier() - 1f) * PhaseSpeedBoost));
             projectile.areaMultiplier = areaMultiplier;
             projectile.onReturned = onReturned;
             projectile.phase = Phase.Outbound;

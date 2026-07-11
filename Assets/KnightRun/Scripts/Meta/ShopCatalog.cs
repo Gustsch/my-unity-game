@@ -21,12 +21,13 @@ namespace KnightRun.Meta
             int level = GetLevel(id);
             return id switch
             {
-                ShopUpgradeId.MaxHealth => 40 + level * 27,
-                ShopUpgradeId.MoveSpeed => 35 + level * 20,
-                ShopUpgradeId.AttackSpeed => 38 + level * 22,
-                ShopUpgradeId.Ressurection => 100 + level * 103,
-                ShopUpgradeId.BaseDamage => 20 + level * 12,
-                ShopUpgradeId.Healing => 30 + level * 26,
+                ShopUpgradeId.MaxHealth => 100 + level * 127,
+                ShopUpgradeId.MoveSpeed => 135 + level * 120,
+                ShopUpgradeId.AttackSpeed => 138 + level * 122,
+                ShopUpgradeId.Ressurection => 300 + level * 153,
+                ShopUpgradeId.BaseDamage => 120 + level * 112,
+                ShopUpgradeId.Healing => 130 + level * 126,
+                ShopUpgradeId.MultiStrike => 255 + level * 130,
                 _ => 50
             };
         }
@@ -41,6 +42,7 @@ namespace KnightRun.Meta
                 ShopUpgradeId.Ressurection => "Revivida",
                 ShopUpgradeId.BaseDamage => "Dano Base",
                 ShopUpgradeId.Healing => "Cura",
+                ShopUpgradeId.MultiStrike => "Golpes Multiplos",
                 _ => id.ToString()
             };
         }
@@ -55,6 +57,7 @@ namespace KnightRun.Meta
                 ShopUpgradeId.Ressurection => $"+1 Ressurreicao por Level (Nv {nextLevel})",
                 ShopUpgradeId.BaseDamage => $"+10% de Dano Base por Level (Nv {nextLevel})",
                 ShopUpgradeId.Healing => $"+10 de Cura a cada 10 inimigos mortos (Nv {nextLevel})",
+                ShopUpgradeId.MultiStrike => $"+1 ataque simultaneo (Nv {nextLevel})",
                 _ => string.Empty
             };
         }

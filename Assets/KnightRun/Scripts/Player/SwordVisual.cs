@@ -27,6 +27,14 @@ namespace KnightRun.Player
 
             guardBaseScale = guard.localScale;
             bladeBaseScale = blade.localScale;
+
+            SetVisible(false);
+        }
+
+        public void SetVisible(bool visible)
+        {
+            if (swordPivot != null)
+                swordPivot.gameObject.SetActive(visible);
         }
 
         public void SetAttackAreaMultiplier(float multiplier)

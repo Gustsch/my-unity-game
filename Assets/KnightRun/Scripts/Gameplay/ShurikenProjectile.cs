@@ -6,9 +6,9 @@ namespace KnightRun.Gameplay
 {
     public class ShurikenProjectile : MonoBehaviour
     {
-        const float Speed = 36f;
-        const float MaxLifetime = 3f;
-        const float MaxTravelDistance = 40f;
+        const float Speed = 42f;
+        const float MaxLifetime = 7f;
+        const float BaseMaxTravelDistance = 90f;
         const float BaseHitRadius = 0.35f;
         const float HitboxHeight = 8f;
 
@@ -17,6 +17,8 @@ namespace KnightRun.Gameplay
         float damage;
         float areaMultiplier;
         float lifetime;
+        float ownTravelDistance;
+        float maxTravelDistance;
         bool hasHit;
 
         public static ShurikenProjectile Spawn(Vector3 position, float damage, Vector3 direction, float areaMultiplier)
@@ -42,6 +44,7 @@ namespace KnightRun.Gameplay
             projectile.direction = direction;
             projectile.damage = Mathf.Max(0.01f, damage);
             projectile.areaMultiplier = areaMultiplier;
+            projectile.maxTravelDistance = RunForwardMotion.GetScaledProjectileRange(BaseMaxTravelDistance);
             return projectile;
         }
 
@@ -63,9 +66,10 @@ namespace KnightRun.Gameplay
 
             transform.position += direction * Speed * Time.deltaTime;
             transform.position += RunForwardMotion.GetDelta();
+            ownTravelDistance += Speed * Time.deltaTime;
             transform.Rotate(Vector3.forward, 720f * Time.deltaTime, Space.Self);
 
-            if ((transform.position - startPosition).sqrMagnitude >= MaxTravelDistance * MaxTravelDistance)
+            if (ownTravelDistance >= maxTravelDistance)
             {
                 Destroy(gameObject);
                 return;

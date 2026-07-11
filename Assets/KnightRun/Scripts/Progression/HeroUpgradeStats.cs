@@ -21,6 +21,7 @@ namespace KnightRun.Progression
 
         public int SwordDamage => ScaleDamage(
             SkillPool.GetSwordDamage(GetLevel(HeroSkillId.Sword)));
+        public bool HasSword => GetLevel(HeroSkillId.Sword) > 0;
         public int BowDamage => ScaleDamage(Mathf.Max(10, GetLevel(HeroSkillId.Bow) * SkillPool.BowDamagePerLevel));
         public bool HasBow => GetLevel(HeroSkillId.Bow) > 0;
         public bool HasShuriken => GetLevel(HeroSkillId.Shuriken) > 0;
@@ -29,7 +30,7 @@ namespace KnightRun.Progression
         public bool HasBoomerang => GetLevel(HeroSkillId.Boomerang) > 0;
         public bool HasThrowingAxe => GetLevel(HeroSkillId.ThrowingAxe) > 0;
         public int BombDamage => ScaleDamage(Mathf.Max(10, GetLevel(HeroSkillId.Bomb) * SkillPool.BombDamagePerLevel));
-        public int AttackVolleyCount => 1 + GetLevel(HeroSkillId.MultiStrike);
+        public int AttackVolleyCount => MetaBonuses.AttackVolleyCount;
 
         public float ShurikenDamage
         {
@@ -163,14 +164,15 @@ namespace KnightRun.Progression
         public void ResetBonuses()
         {
             levels.Clear();
-            levels[HeroSkillId.Sword] = SkillPool.StartingSwordLevel;
+            HeroSkillId startingWeapon = CharacterCatalog.GetStartingWeapon(CharacterSelection.SelectedCharacter);
+            levels[startingWeapon] = CharacterCatalog.StartingWeaponLevel;
             HeroLevel = 0;
             OnBonusesChanged?.Invoke();
         }
 
         void Awake()
         {
-            if (GetLevel(HeroSkillId.Sword) == 0)
+            if (levels.Count == 0)
                 ResetBonuses();
         }
     }
