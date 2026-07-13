@@ -94,17 +94,19 @@ namespace KnightRun.World
         void BuildMineCartDecor(Material wallMat)
         {
             Material railMat = KnightRunMaterials.Get(KnightRunTexture.MineRail, new Vector2(1f, 8f));
-            for (int lane = 0; lane < 3; lane++)
+            float[] lanes = PhaseTrackLayout.GetLanePositions(currentSettings);
+            for (int lane = 0; lane < lanes.Length; lane++)
             {
-                float x = RunnerController.LanePositions[lane];
-                CreateRail(decorRoot, new Vector3(x - 0.45f, 0.05f, Length * 0.5f), railMat);
-                CreateRail(decorRoot, new Vector3(x + 0.45f, 0.05f, Length * 0.5f), railMat);
+                float x = lanes[lane];
+                CreateRail(decorRoot, new Vector3(x - 0.35f, 0.05f, Length * 0.5f), railMat);
+                CreateRail(decorRoot, new Vector3(x + 0.35f, 0.05f, Length * 0.5f), railMat);
             }
 
+            float beamWidth = PhaseTrackLayout.GetGroundWidth(currentSettings) + 0.5f;
             for (int i = 0; i < 3; i++)
             {
                 float z = 4f + i * 6f;
-                CreateBox("SupportBeam", new Vector3(8.5f, 0.25f, 0.35f), new Vector3(0f, 2.6f, z), wallMat, decorRoot);
+                CreateBox("SupportBeam", new Vector3(beamWidth, 0.25f, 0.35f), new Vector3(0f, 2.6f, z), wallMat, decorRoot);
             }
         }
 

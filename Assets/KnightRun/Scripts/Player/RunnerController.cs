@@ -9,12 +9,12 @@ namespace KnightRun.Player
     [RequireComponent(typeof(CharacterController))]
     public class RunnerController : MonoBehaviour
     {
-        public static readonly float[] LanePositions = { -2f, 0f, 2f };
+        public static float[] LanePositions => PhaseTrackLayout.GetLanePositions();
         public static readonly Vector3 StartPosition = new Vector3(0f, 0f, 2f);
         public static float TrackMinX => PhaseTrackLayout.GetPlayableMinX();
         public static float TrackMaxX => PhaseTrackLayout.GetPlayableMaxX();
 
-        public int CurrentLane { get; private set; } = 1;
+        public int CurrentLane { get; private set; } = PhaseTrackLayout.GetCenterLaneIndex();
         public bool IsSliding { get; private set; }
         public bool IsGrounded { get; private set; } = true;
         public bool IsSlideInvulnerable =>
@@ -44,9 +44,9 @@ namespace KnightRun.Player
         const float NormalHeight = 2f;
         const float SlideHeight = 1f;
         const float FallRestartY = -4f;
-        const float IceAcceleration = 36f;
-        const float IceStartAcceleration = 14f;
-        const float IceDeceleration = 50f;
+        const float IceAcceleration = 55f;
+        const float IceStartAcceleration = 28f;
+        const float IceDeceleration = 90f;
         const float IceStopThreshold = 0.15f;
 
         float FreeMoveSpeed
@@ -80,6 +80,7 @@ namespace KnightRun.Player
             mineCartVisual = GetComponent<MineCartVisual>();
             slideVisual = GetComponent<KnightSlideVisual>();
             upgradeStats = GetComponent<HeroUpgradeStats>();
+            CurrentLane = PhaseTrackLayout.GetCenterLaneIndex();
             targetLaneX = LanePositions[CurrentLane];
         }
 
@@ -167,28 +168,31 @@ namespace KnightRun.Player
 
         void ChangeLane(int direction)
         {
-            int next = Mathf.Clamp(CurrentLane + direction, 0, LanePositions.Length - 1);
+            float[] lanes = LanePositions;
+            int next = Mathf.Clamp(CurrentLane + direction, 0, lanes.Length - 1);
             if (next == CurrentLane)
                 return;
 
             CurrentLane = next;
-            targetLaneX = LanePositions[CurrentLane];
+            targetLaneX = lanes[CurrentLane];
         }
 
         public void SnapToNearestLane()
         {
+            float[] lanes = LanePositions;
             CurrentLane = GetNearestLaneIndex(transform.position.x);
-            targetLaneX = LanePositions[CurrentLane];
+            targetLaneX = lanes[CurrentLane];
         }
 
         public static int GetNearestLaneIndex(float x)
         {
+            float[] lanes = LanePositions;
             int nearest = 0;
             float bestDistance = float.MaxValue;
 
-            for (int i = 0; i < LanePositions.Length; i++)
+            for (int i = 0; i < lanes.Length; i++)
             {
-                float distance = Mathf.Abs(LanePositions[i] - x);
+                float distance = Mathf.Abs(lanes[i] - x);
                 if (distance < bestDistance)
                 {
                     bestDistance = distance;
@@ -268,23 +272,35 @@ namespace KnightRun.Player
                 : 1f;
 
             Vector3 position = transform.position;
+            bool grounded = controller.isGrounded;
 
             if (UsesLaneMovement)
                 position.x = Mathf.MoveTowards(position.x, targetLaneX, LaneSwitchSpeed * Time.deltaTime);
             else if (UsesSlideMovement)
-                position.x = ApplyIceMovement(position.x);
+            {
+                if (grounded)
+                    position.x = ApplyIceMovement(position.x);
+                else
+                {
+                    iceHorizontalVelocity = 0f;
+                    position.x = Mathf.Clamp(
+                        position.x + horizontalInput * FreeMoveSpeed * Time.deltaTime,
+                        TrackMinX,
+                        TrackMaxX);
+                }
+            }
             else
             {
                 iceHorizontalVelocity = 0f;
                 position.x = Mathf.Clamp(position.x + horizontalInput * FreeMoveSpeed * Time.deltaTime, TrackMinX, TrackMaxX);
             }
 
-            if (controller.isGrounded && verticalVelocity < 0f)
+            if (grounded && verticalVelocity < 0f)
             {
                 verticalVelocity = -2f;
                 IsGrounded = true;
             }
-            else if (!controller.isGrounded)
+            else if (!grounded)
             {
                 IsGrounded = false;
             }
@@ -350,7 +366,7 @@ namespace KnightRun.Player
         {
             controller.enabled = false;
             transform.position = startPosition;
-            CurrentLane = 1;
+            CurrentLane = PhaseTrackLayout.GetCenterLaneIndex();
             targetLaneX = LanePositions[CurrentLane];
             horizontalInput = 0f;
             iceHorizontalVelocity = 0f;

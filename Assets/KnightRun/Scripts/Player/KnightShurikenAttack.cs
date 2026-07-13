@@ -104,8 +104,7 @@ namespace KnightRun.Player
                 ? shurikenVisual.ThrowPosition
                 : transform.position + Vector3.up;
 
-            Vector3 aimDirection = target.transform.position - spawnPosition;
-            aimDirection.y = 0f;
+            Vector3 aimDirection = target.position - spawnPosition;
             if (aimDirection.sqrMagnitude < 0.001f)
                 aimDirection = Vector3.forward;
             aimDirection.Normalize();
@@ -114,7 +113,7 @@ namespace KnightRun.Player
             for (int i = 0; i < volleyCount; i++)
             {
                 float angleOffset = (i - (volleyCount - 1) * 0.5f) * VolleyAngleSpread;
-                Vector3 direction = Quaternion.Euler(0f, angleOffset, 0f) * aimDirection;
+                Vector3 direction = Quaternion.AngleAxis(angleOffset, Vector3.up) * aimDirection;
 
                 ShurikenProjectile.Spawn(
                     spawnPosition,

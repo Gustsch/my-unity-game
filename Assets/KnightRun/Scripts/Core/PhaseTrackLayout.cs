@@ -8,11 +8,39 @@ namespace KnightRun.Core
         public const float DefaultPlayableHalfWidth = 3.2f;
         public const float WallThickness = 0.5f;
         public const float PlayableInsetFromWall = DefaultTrackHalfWidth - DefaultPlayableHalfWidth;
+        public const int DefaultLaneCount = 3;
+
+        static readonly float[] CachedThreeLanes = { -2f, 0f, 2f };
+        static readonly float[] CachedFiveLanes = { -3.2f, -1.6f, 0f, 1.6f, 3.2f };
 
         public static RunPhaseSettings GetSettings()
         {
             RunPhaseManager manager = RunPhaseManager.Instance;
             return manager != null ? manager.CurrentSettings : RunPhaseDefaults.All[0];
+        }
+
+        public static float[] GetLanePositions(RunPhaseSettings settings)
+        {
+            int laneCount = settings.laneCount > 0 ? settings.laneCount : DefaultLaneCount;
+            if (laneCount >= 5)
+                return CachedFiveLanes;
+            return CachedThreeLanes;
+        }
+
+        public static float[] GetLanePositions()
+        {
+            return GetLanePositions(GetSettings());
+        }
+
+        public static int GetCenterLaneIndex(RunPhaseSettings settings)
+        {
+            float[] lanes = GetLanePositions(settings);
+            return lanes.Length / 2;
+        }
+
+        public static int GetCenterLaneIndex()
+        {
+            return GetCenterLaneIndex(GetSettings());
         }
 
         public static float GetTrackHalfWidth(RunPhaseSettings settings)

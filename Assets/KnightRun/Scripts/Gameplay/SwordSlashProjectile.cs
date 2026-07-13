@@ -122,7 +122,7 @@ namespace KnightRun.Gameplay
                 if (hit.CompareTag("Player"))
                     continue;
 
-                if (CombatTarget.TryApplyDamage(hit, damage))
+                if (CombatTarget.TryApplySwordDamage(hit, damage))
                 {
                     hasHit = true;
                     Destroy(gameObject);

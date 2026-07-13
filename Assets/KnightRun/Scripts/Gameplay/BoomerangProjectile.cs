@@ -88,13 +88,13 @@ namespace KnightRun.Gameplay
             }
 
             Vector3 targetPosition = target.position;
-            targetPosition.y = transform.position.y;
 
             MoveToward(targetPosition);
             transform.Rotate(Vector3.up, 720f * Time.deltaTime, Space.Self);
             TryHit();
 
-            if ((transform.position - targetPosition).sqrMagnitude <= ReturnArrivalDistance * ReturnArrivalDistance)
+            Vector3 reach = targetPosition - transform.position;
+            if (reach.sqrMagnitude <= ReturnArrivalDistance * ReturnArrivalDistance)
                 BeginReturn();
         }
 
@@ -107,7 +107,6 @@ namespace KnightRun.Gameplay
             }
 
             Vector3 returnPosition = player.position + Vector3.up;
-            returnPosition.y = transform.position.y;
 
             MoveToward(returnPosition);
             transform.Rotate(Vector3.up, 900f * Time.deltaTime, Space.Self);
@@ -119,7 +118,6 @@ namespace KnightRun.Gameplay
         void MoveToward(Vector3 destination)
         {
             Vector3 offset = destination - transform.position;
-            offset.y = 0f;
             if (offset.sqrMagnitude < 0.0001f)
                 return;
 

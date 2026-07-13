@@ -18,6 +18,7 @@ namespace KnightRun.Core
         public bool useSlideMovement;
         public float trackHalfWidth;
         public float playableHalfWidth;
+        public int laneCount;
         public int enemyHealthMin;
         public int enemyHealthMax;
     }
@@ -73,7 +74,9 @@ namespace KnightRun.Core
                 enemySpawnMultiplier = 0.8f,
                 useLaneMovement = true,
                 useSlideMovement = false,
-                trackHalfWidth = 6f,
+                trackHalfWidth = 7f,
+                playableHalfWidth = 5.2f,
+                laneCount = 5,
                 enemyHealthMin = 40,
                 enemyHealthMax = 70
             },

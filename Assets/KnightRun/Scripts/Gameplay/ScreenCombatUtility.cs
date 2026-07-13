@@ -27,6 +27,17 @@ namespace KnightRun.Gameplay
                     candidates.Add(enemy.transform);
             }
 
+            BatEnemy[] bats = Object.FindObjectsByType<BatEnemy>(FindObjectsSortMode.None);
+            for (int i = 0; i < bats.Length; i++)
+            {
+                BatEnemy bat = bats[i];
+                if (bat == null)
+                    continue;
+
+                if (IsOnScreen(bat.transform.position, camera))
+                    candidates.Add(bat.transform);
+            }
+
             Boss[] bosses = Object.FindObjectsByType<Boss>(FindObjectsSortMode.None);
             for (int i = 0; i < bosses.Length; i++)
             {
@@ -50,6 +61,7 @@ namespace KnightRun.Gameplay
             Camera camera = Camera.main;
             Enemy[] enemies = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
             var toKill = new List<Enemy>(enemies.Length);
+            int killed = 0;
 
             for (int i = 0; i < enemies.Length; i++)
             {
@@ -64,10 +76,27 @@ namespace KnightRun.Gameplay
             for (int i = 0; i < toKill.Count; i++)
             {
                 if (toKill[i] != null)
+                {
                     toKill[i].ForceKill();
+                    killed++;
+                }
             }
 
-            return toKill.Count;
+            BatEnemy[] bats = Object.FindObjectsByType<BatEnemy>(FindObjectsSortMode.None);
+            for (int i = 0; i < bats.Length; i++)
+            {
+                BatEnemy bat = bats[i];
+                if (bat == null)
+                    continue;
+
+                if (!IsOnScreen(bat.transform.position, camera))
+                    continue;
+
+                bat.ForceKill();
+                killed++;
+            }
+
+            return killed;
         }
 
         public static bool IsOnScreen(Vector3 worldPosition, Camera camera = null)

@@ -201,7 +201,7 @@ namespace KnightRun.Player
                 if (BossProjectile.TryBreak(hit))
                     continue;
 
-                CombatTarget.TryApplyDamage(hit, damage);
+                CombatTarget.TryApplySwordDamage(hit, damage);
             }
         }
 

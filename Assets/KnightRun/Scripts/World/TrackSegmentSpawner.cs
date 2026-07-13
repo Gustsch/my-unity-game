@@ -17,6 +17,15 @@ namespace KnightRun.World
         const float MinEnemySpawnAheadOfPlayer = 34f;
         const float ContinuousSpawnMinAhead = 34f;
         const float ContinuousSpawnMaxAhead = 52f;
+        const float BatSpawnChanceInCave = 0.40f;
+        const int MinTreesPerForestSegment = 1;
+        const int MaxTreesPerForestSegment = 3;
+        const int MinHolesPerMineSegment = 1;
+        const int MaxHolesPerMineSegment = 2;
+        const int MinTrenchesPerVolcanoSegment = 1;
+        const int MaxTrenchesPerVolcanoSegment = 2;
+        const int MinStalactitesPerIceSegment = 1;
+        const int MaxStalactitesPerIceSegment = 3;
 
         readonly Queue<TrackSegment> activeSegments = new Queue<TrackSegment>();
         RunnerController player;
@@ -137,28 +146,137 @@ namespace KnightRun.World
                 if (!TryRollEnemySpawnZ(segment, out float spawnZ))
                     break;
 
-                SpawnEnemyAt(settings, GetSpawnX(settings), spawnZ);
+                SpawnHazardAt(settings, GetSpawnX(settings), spawnZ);
             }
+
+            SpawnPhaseObstacles(segment, settings);
 
             if (Random.value < 0.65f)
                 SpawnCoinLine(contentRoot, settings);
         }
 
+        void SpawnPhaseObstacles(TrackSegment segment, RunPhaseSettings settings)
+        {
+            if (settings.phase == RunPhase.Forest)
+            {
+                SpawnForestTrees(segment, settings);
+                return;
+            }
+
+            if (settings.phase == RunPhase.MineCart)
+            {
+                SpawnMineHoles(segment, settings);
+                return;
+            }
+
+            if (settings.phase == RunPhase.Volcano)
+            {
+                SpawnVolcanoHazards(segment, settings);
+                return;
+            }
+
+            if (settings.phase == RunPhase.IceCavern)
+                SpawnIceStalactites(segment, settings);
+        }
+
+        void SpawnForestTrees(TrackSegment segment, RunPhaseSettings settings)
+        {
+            if (Random.value > settings.obstacleChance)
+                return;
+
+            int treeCount = Random.Range(MinTreesPerForestSegment, MaxTreesPerForestSegment + 1);
+            for (int i = 0; i < treeCount; i++)
+            {
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
+
+                float spawnX = GetSpawnX(settings);
+                PathTreeObstacle.Spawn(transform, new Vector3(spawnX, 0f, spawnZ));
+            }
+        }
+
+        void SpawnMineHoles(TrackSegment segment, RunPhaseSettings settings)
+        {
+            if (Random.value > settings.obstacleChance)
+                return;
+
+            float[] lanes = PhaseTrackLayout.GetLanePositions(settings);
+            int holeCount = Random.Range(MinHolesPerMineSegment, MaxHolesPerMineSegment + 1);
+            for (int i = 0; i < holeCount; i++)
+            {
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
+
+                float spawnX = lanes[Random.Range(0, lanes.Length)];
+                MineHoleObstacle.Spawn(transform, new Vector3(spawnX, 0f, spawnZ));
+            }
+        }
+
+        void SpawnVolcanoHazards(TrackSegment segment, RunPhaseSettings settings)
+        {
+            if (Random.value > settings.obstacleChance)
+                return;
+
+            int trenchCount = Random.Range(MinTrenchesPerVolcanoSegment, MaxTrenchesPerVolcanoSegment + 1);
+            for (int i = 0; i < trenchCount; i++)
+            {
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
+
+                VolcanoTrenchObstacle.Spawn(transform, spawnZ, settings);
+            }
+        }
+
+        void SpawnIceStalactites(TrackSegment segment, RunPhaseSettings settings)
+        {
+            if (Random.value > settings.obstacleChance)
+                return;
+
+            int count = Random.Range(MinStalactitesPerIceSegment, MaxStalactitesPerIceSegment + 1);
+            for (int i = 0; i < count; i++)
+            {
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
+
+                float spawnX = GetSpawnX(settings);
+                FallingStalactiteHazard.Spawn(transform, new Vector3(spawnX, 0f, spawnZ));
+            }
+        }
+
+        void SpawnHazardAt(RunPhaseSettings settings, float x, float z)
+        {
+            if (settings.phase == RunPhase.Cave && Random.value < BatSpawnChanceInCave)
+            {
+                SpawnBatAt(settings, x, z);
+                return;
+            }
+
+            SpawnEnemyAt(settings, x, z);
+        }
+
         static float GetSpawnX(RunPhaseSettings settings)
         {
             if (settings.useLaneMovement)
-                return LanePositions[Random.Range(0, LanePositions.Length)];
+            {
+                float[] lanes = PhaseTrackLayout.GetLanePositions(settings);
+                return lanes[Random.Range(0, lanes.Length)];
+            }
 
             return Random.Range(PhaseTrackLayout.GetPlayableMinX(settings), PhaseTrackLayout.GetPlayableMaxX(settings));
         }
-
-        static float[] LanePositions => RunnerController.LanePositions;
 
         void SpawnEnemyAheadOfPlayer()
         {
             RunPhaseSettings settings = GetCurrentSettings();
             float spawnZ = player.transform.position.z + Random.Range(ContinuousSpawnMinAhead, ContinuousSpawnMaxAhead);
-            SpawnEnemyAt(settings, GetSpawnX(settings), spawnZ);
+            SpawnHazardAt(settings, GetSpawnX(settings), spawnZ);
+        }
+
+        void SpawnBatAt(RunPhaseSettings settings, float x, float z)
+        {
+            int health = EnemyCombatStats.RollHealthForPhase(settings);
+            int damage = EnemyCombatStats.GetContactDamageForHealth(health);
+            BatEnemy.Spawn(transform, new Vector3(x, 0f, z), health, damage);
         }
 
         bool TryRollEnemySpawnZ(TrackSegment segment, out float spawnZ)
@@ -244,6 +362,24 @@ namespace KnightRun.World
 
             foreach (Enemy enemy in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
                 Destroy(enemy.gameObject);
+
+            foreach (BatEnemy bat in FindObjectsByType<BatEnemy>(FindObjectsSortMode.None))
+                Destroy(bat.gameObject);
+
+            foreach (PathTreeObstacle tree in FindObjectsByType<PathTreeObstacle>(FindObjectsSortMode.None))
+                Destroy(tree.gameObject);
+
+            foreach (MineHoleObstacle hole in FindObjectsByType<MineHoleObstacle>(FindObjectsSortMode.None))
+                Destroy(hole.gameObject);
+
+            foreach (VolcanoTrenchObstacle trench in FindObjectsByType<VolcanoTrenchObstacle>(FindObjectsSortMode.None))
+                Destroy(trench.gameObject);
+
+            foreach (FireColumnHazard fire in FindObjectsByType<FireColumnHazard>(FindObjectsSortMode.None))
+                Destroy(fire.gameObject);
+
+            foreach (FallingStalactiteHazard stalactite in FindObjectsByType<FallingStalactiteHazard>(FindObjectsSortMode.None))
+                Destroy(stalactite.gameObject);
 
             foreach (Boss boss in FindObjectsByType<Boss>(FindObjectsSortMode.None))
                 Destroy(boss.gameObject);

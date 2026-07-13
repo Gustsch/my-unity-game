@@ -24,7 +24,6 @@ namespace KnightRun.Gameplay
         public static ShurikenProjectile Spawn(Vector3 position, float damage, Vector3 direction, float areaMultiplier)
         {
             areaMultiplier = Mathf.Max(1f, areaMultiplier);
-            direction.y = 0f;
             if (direction.sqrMagnitude < 0.001f)
                 direction = Vector3.forward;
             direction.Normalize();

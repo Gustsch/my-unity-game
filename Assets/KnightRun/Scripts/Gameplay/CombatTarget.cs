@@ -6,6 +6,16 @@ namespace KnightRun.Gameplay
     {
         public static bool TryApplyDamage(Collider hit, float damage)
         {
+            return TryApplyDamage(hit, damage, swordMeleeOnly: false);
+        }
+
+        public static bool TryApplySwordDamage(Collider hit, float damage)
+        {
+            return TryApplyDamage(hit, damage, swordMeleeOnly: true);
+        }
+
+        static bool TryApplyDamage(Collider hit, float damage, bool swordMeleeOnly)
+        {
             if (hit == null || hit.CompareTag("Player"))
                 return false;
 
@@ -15,6 +25,16 @@ namespace KnightRun.Gameplay
             if (enemy != null)
             {
                 enemy.TakeDamage(roundedDamage);
+                return true;
+            }
+
+            BatEnemy bat = hit.GetComponent<BatEnemy>() ?? hit.GetComponentInParent<BatEnemy>();
+            if (bat != null)
+            {
+                if (swordMeleeOnly && !bat.IsOpenToSwordAttack)
+                    return false;
+
+                bat.TakeDamage(roundedDamage);
                 return true;
             }
 
@@ -45,6 +65,20 @@ namespace KnightRun.Gameplay
 
                 bestDistance = distance;
                 nearest = enemy.transform;
+            }
+
+            BatEnemy[] bats = Object.FindObjectsByType<BatEnemy>(FindObjectsSortMode.None);
+            foreach (BatEnemy bat in bats)
+            {
+                if (bat == null)
+                    continue;
+
+                float distance = (bat.transform.position - origin).sqrMagnitude;
+                if (distance >= bestDistance)
+                    continue;
+
+                bestDistance = distance;
+                nearest = bat.transform;
             }
 
             Boss[] bosses = Object.FindObjectsByType<Boss>(FindObjectsSortMode.None);
