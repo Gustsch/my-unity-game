@@ -10,6 +10,41 @@ namespace KnightRun.Gameplay
         const float FallbackAheadDistance = 28f;
         const float FallbackBehindDistance = 2f;
 
+        public static bool TryGetRandomOnScreenTarget(out Transform target)
+        {
+            target = null;
+            Camera camera = Camera.main;
+            var candidates = new List<Transform>();
+
+            Enemy[] enemies = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                Enemy enemy = enemies[i];
+                if (enemy == null)
+                    continue;
+
+                if (IsOnScreen(enemy.transform.position, camera))
+                    candidates.Add(enemy.transform);
+            }
+
+            Boss[] bosses = Object.FindObjectsByType<Boss>(FindObjectsSortMode.None);
+            for (int i = 0; i < bosses.Length; i++)
+            {
+                Boss boss = bosses[i];
+                if (boss == null)
+                    continue;
+
+                if (IsOnScreen(boss.transform.position, camera))
+                    candidates.Add(boss.transform);
+            }
+
+            if (candidates.Count == 0)
+                return false;
+
+            target = candidates[Random.Range(0, candidates.Count)];
+            return true;
+        }
+
         public static int KillAllEnemiesOnScreen()
         {
             Camera camera = Camera.main;

@@ -26,6 +26,7 @@ namespace KnightRun.Progression
         public bool HasBow => GetLevel(HeroSkillId.Bow) > 0;
         public bool HasShuriken => GetLevel(HeroSkillId.Shuriken) > 0;
         public bool HasMagicBook => GetLevel(HeroSkillId.MagicBook) > 0;
+        public int MagicBookCount => GetLevel(HeroSkillId.MagicBook);
         public bool HasBomb => GetLevel(HeroSkillId.Bomb) > 0;
         public bool HasBoomerang => GetLevel(HeroSkillId.Boomerang) > 0;
         public bool HasThrowingAxe => GetLevel(HeroSkillId.ThrowingAxe) > 0;
@@ -45,7 +46,7 @@ namespace KnightRun.Progression
             }
         }
 
-        public float MagicBookAuraDamage
+        public float MagicBookContactDamage
         {
             get
             {
@@ -53,8 +54,8 @@ namespace KnightRun.Progression
                 if (level <= 0)
                     return 0f;
 
-                float baseDamage = SkillPool.MagicBookBaseAuraDamage +
-                    (level - 1) * SkillPool.MagicBookAuraDamagePerLevel;
+                float baseDamage = SkillPool.MagicBookContactDamage +
+                    (level - 1) * SkillPool.MagicBookContactDamagePerLevel;
                 return ScaleDamage(baseDamage);
             }
         }
@@ -95,7 +96,7 @@ namespace KnightRun.Progression
             Mathf.Max(1, Mathf.RoundToInt(damage * MetaBonuses.BaseDamageMultiplier));
 
         static float ScaleDamage(float damage) =>
-            Mathf.Max(1f, damage * MetaBonuses.BaseDamageMultiplier);
+            Mathf.Max(1, Mathf.RoundToInt(damage * MetaBonuses.BaseDamageMultiplier));
 
         public int GetUnlockedWeaponCount()
         {

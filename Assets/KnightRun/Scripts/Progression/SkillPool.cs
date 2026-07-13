@@ -22,20 +22,22 @@ namespace KnightRun.Progression
         public const float IronSkinReductionPerLevel = 0.1f;
         public const float QuickSlashSpeedPerLevel = 0.08f;
         public const float WideArcAreaPerLevel = 0.2f;
-        public const int VigorHealthPerLevel = 200;
+        public const int VigorHealthPerLevel = 100;
         public const float AgileStepsSpeedPerLevel = 0.08f;
         public const float ExtendedSlideDurationPerLevel = 0.1f;
         public const float BowAttackInterval = 1.2f;
         public const float BowMinAttackInterval = 0.45f;
-        public const float ShurikenAttackInterval = 0.3f;
+        public const float ShurikenAttackInterval = 1.5f;
         public const float ShurikenMinAttackInterval = 0.1f;
         public const float ShurikenBaseDamage = 4f;
         public const float ShurikenDamagePerLevel = 4f;
-        public const float MagicBookBaseAuraDamage = 4f;
-        public const float MagicBookAuraDamagePerLevel = 4f;
-        public const float MagicBookAuraTickInterval = 0.5f;
-        public const float MagicBookAuraStunDuration = 0.1f;
-        public const float MagicBookBaseAuraRadius = 2.9f;
+        public const float MagicBookOrbitRadius = 1.7f;
+        public const float MagicBookBaseSpinSpeed = 160f;
+        public const float MagicBookBaseHitRadius = 0.5f;
+        public const float MagicBookBaseScale = 1f;
+        public const float MagicBookOrbitHeight = 1.1f;
+        public const float MagicBookContactDamage = 4f;
+        public const float MagicBookContactDamagePerLevel = 2f;
         public const float BombAttackInterval = 2f;
         public const float BombBaseDamage = 20f;
         public const float BombMinAttackInterval = 0.8f;
@@ -43,13 +45,12 @@ namespace KnightRun.Progression
         public const float BombBaseExplosionRadius = 2f;
         public const float BoomerangBaseDamage = 20f;
         public const float BoomerangDamagePerLevel = 5f;
-        public const float BoomerangBaseSpeed = 34f;
-        public const float ThrowingAxeAttackInterval = 3f;
+        public const float BoomerangBaseSpeed = 12f;
+        public const float ThrowingAxeAttackInterval = 2f;
         public const float ThrowingAxeMinAttackInterval = 1.6f;
         public const float ThrowingAxeBaseDamage = 30f;
         public const float ThrowingAxeDamagePerLevel = 10f;
         public const float ThrowingAxeSpeed = 24f;
-        public const float ThrowingAxeDirectionSpread = 35f;
 
         public static readonly SkillDefinition[] All =
         {
@@ -93,8 +94,8 @@ namespace KnightRun.Progression
                     ? $"Lanca shurikens com {ShurikenBaseDamage:0.#} de dano no inimigo mais proximo"
                     : $"+{ShurikenDamagePerLevel:0.#} dano da shuriken",
                 HeroSkillId.MagicBook => nextLevel == 1
-                    ? $"Aura com {MagicBookBaseAuraDamage:0.#} de dano a cada {MagicBookAuraTickInterval:0.#}s e stun leve"
-                    : $"+{MagicBookAuraDamagePerLevel:0.#} dano da aura",
+                    ? "Livros orbitando que bloqueiam projetis inimigos"
+                    : "+1 livro orbitando",
                 HeroSkillId.Bomb => nextLevel == 1
                     ? $"Arremessa bomba a {BombFixedThrowDistance:0.#}m que explode em area"
                     : "+10 dano da bomba",
@@ -102,7 +103,7 @@ namespace KnightRun.Progression
                     ? $"Bumerangue com {BoomerangBaseDamage:0.#} de dano no inimigo mais proximo"
                     : $"+{BoomerangDamagePerLevel:0.#} dano do bumerangue",
                 HeroSkillId.ThrowingAxe => nextLevel == 1
-                    ? $"Machado lento com {ThrowingAxeBaseDamage:0.#} de dano para frente"
+                    ? $"Machado lento com {ThrowingAxeBaseDamage:0.#} de dano mirando inimigos na tela"
                     : $"+{ThrowingAxeDamagePerLevel:0.#} dano do machado",
                 HeroSkillId.QuickSlash => $"+{QuickSlashSpeedPerLevel * 100f:0.#}% velocidade de ataque",
                 HeroSkillId.WideArc => $"+{WideArcAreaPerLevel * 100f:0.#}% area do ataque",

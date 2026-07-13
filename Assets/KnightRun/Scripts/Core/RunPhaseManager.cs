@@ -38,10 +38,9 @@ namespace KnightRun.Core
                 return;
 
             PhaseBossController bossController = PhaseBossController.Instance;
-            if (bossController != null && bossController.HasSpawnedBossForCurrentPhase)
-                return;
+            if (bossController == null || !bossController.IsBossFightActive)
+                PhaseRunElapsed += Time.deltaTime;
 
-            PhaseRunElapsed += Time.deltaTime;
             bossController?.TrySpawnBoss();
         }
 

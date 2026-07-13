@@ -39,13 +39,7 @@ namespace KnightRun.Gameplay
 
         static string FormatDamage(float damage)
         {
-            if (damage >= 10f)
-                return Mathf.RoundToInt(damage).ToString();
-
-            if (Mathf.Approximately(damage, Mathf.Round(damage)))
-                return Mathf.RoundToInt(damage).ToString();
-
-            return damage.ToString("0.#");
+            return Mathf.Max(1, Mathf.RoundToInt(damage)).ToString();
         }
 
         void Update()

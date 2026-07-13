@@ -11,8 +11,8 @@ namespace KnightRun.Player
     {
         public static readonly float[] LanePositions = { -2f, 0f, 2f };
         public static readonly Vector3 StartPosition = new Vector3(0f, 0f, 2f);
-        public const float TrackMinX = -3.2f;
-        public const float TrackMaxX = 3.2f;
+        public static float TrackMinX => PhaseTrackLayout.GetPlayableMinX();
+        public static float TrackMaxX => PhaseTrackLayout.GetPlayableMaxX();
 
         public int CurrentLane { get; private set; } = 1;
         public bool IsSliding { get; private set; }

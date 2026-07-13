@@ -322,8 +322,9 @@ namespace KnightRun.Gameplay
             if (isDead || damage <= 0f)
                 return;
 
-            currentHealth -= damage;
-            QueueDamagePopup(damage);
+            int roundedDamage = Mathf.Max(1, Mathf.RoundToInt(damage));
+            currentHealth -= roundedDamage;
+            QueueDamagePopup(roundedDamage);
             ApplyHitKnockback();
 
             if (currentHealth <= 0f)

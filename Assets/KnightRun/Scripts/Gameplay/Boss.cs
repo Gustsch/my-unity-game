@@ -28,11 +28,12 @@ namespace KnightRun.Gameplay
         public int MaxHealth => maxHealth;
         public float CurrentHealth => currentHealth;
 
+        public event Action<float, float> OnHealthChanged;
+        public event Action<Boss> OnDefeated;
+
         static readonly Color BossTint = new Color(0.55f, 0.08f, 0.12f);
         const float PopupBatchInterval = 0.12f;
         const float ImmediatePopupThreshold = 5f;
-
-        public event Action<Boss> OnDefeated;
 
         public void Build()
         {
@@ -63,9 +64,10 @@ namespace KnightRun.Gameplay
         {
             maxHealth = Mathf.Max(1, health);
             currentHealth = maxHealth;
-            screenAheadDistance = Mathf.Max(12f, aheadDistance);
+            screenAheadDistance = aheadDistance;
             gameObject.name = $"Boss_HP{maxHealth}";
             shootTimer = ShootInterval * 0.5f;
+            NotifyHealthChanged();
         }
 
         void Start()
@@ -163,11 +165,18 @@ namespace KnightRun.Gameplay
             if (isDead || damage <= 0f)
                 return;
 
-            currentHealth -= damage;
-            QueueDamagePopup(damage);
+            int roundedDamage = Mathf.Max(1, Mathf.RoundToInt(damage));
+            currentHealth -= roundedDamage;
+            QueueDamagePopup(roundedDamage);
+            NotifyHealthChanged();
 
             if (currentHealth <= 0f)
                 Die();
+        }
+
+        void NotifyHealthChanged()
+        {
+            OnHealthChanged?.Invoke(currentHealth, maxHealth);
         }
 
         public void TakeDamage(int damage)

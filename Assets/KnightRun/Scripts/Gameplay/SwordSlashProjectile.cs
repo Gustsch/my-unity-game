@@ -85,6 +85,12 @@ namespace KnightRun.Gameplay
             transform.position += RunForwardMotion.GetDelta();
             ownTravelDistance += Speed * Time.deltaTime;
 
+            if (ProjectileTrackBounds.IsBeyondWalls(transform.position))
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             if (ownTravelDistance >= maxTravelDistance)
             {
                 Destroy(gameObject);

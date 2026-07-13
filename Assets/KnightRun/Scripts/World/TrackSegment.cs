@@ -24,9 +24,10 @@ namespace KnightRun.World
             Material groundMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Ground, new Vector2(2f, 4f));
             Material wallMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Wall, new Vector2(1f, 4f));
 
-            ground = CreateBox("Ground", new Vector3(8f, 0.4f, Length), new Vector3(0f, -0.2f, Length * 0.5f), groundMat, keepCollider: true);
-            leftWall = CreateBox("LeftWall", new Vector3(0.5f, 3f, Length), new Vector3(-4.25f, 1.5f, Length * 0.5f), wallMat);
-            rightWall = CreateBox("RightWall", new Vector3(0.5f, 3f, Length), new Vector3(4.25f, 1.5f, Length * 0.5f), wallMat);
+            ground = CreateBox("Ground", new Vector3(PhaseTrackLayout.GetGroundWidth(settings), 0.4f, Length), new Vector3(0f, -0.2f, Length * 0.5f), groundMat, keepCollider: true);
+            ground.gameObject.tag = "Ground";
+            leftWall = CreateBox("LeftWall", new Vector3(PhaseTrackLayout.WallThickness, 3f, Length), new Vector3(PhaseTrackLayout.GetWallCenterX(settings, -1), 1.5f, Length * 0.5f), wallMat, keepCollider: true);
+            rightWall = CreateBox("RightWall", new Vector3(PhaseTrackLayout.WallThickness, 3f, Length), new Vector3(PhaseTrackLayout.GetWallCenterX(settings, 1), 1.5f, Length * 0.5f), wallMat, keepCollider: true);
 
             decorRoot = new GameObject("Decor").transform;
             decorRoot.SetParent(transform, false);
@@ -144,8 +145,6 @@ namespace KnightRun.World
             if (keepCollider)
             {
                 box.isStatic = true;
-                if (name == "Ground")
-                    box.tag = "Ground";
             }
             else
             {
@@ -159,6 +158,7 @@ namespace KnightRun.World
         {
             currentSettings = settings;
             Phase = settings.phase;
+            ApplyLayout(settings);
 
             Material groundMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Ground, new Vector2(2f, 4f));
             Material wallMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Wall, new Vector2(1f, 4f));
@@ -166,6 +166,29 @@ namespace KnightRun.World
             SetMaterial(ground, groundMat);
             SetMaterial(leftWall, wallMat);
             SetMaterial(rightWall, wallMat);
+        }
+
+        public void ApplyLayout(RunPhaseSettings settings)
+        {
+            currentSettings = settings;
+
+            if (ground != null)
+            {
+                ground.localScale = new Vector3(PhaseTrackLayout.GetGroundWidth(settings), 0.4f, Length);
+                ground.localPosition = new Vector3(0f, -0.2f, Length * 0.5f);
+            }
+
+            if (leftWall != null)
+            {
+                leftWall.localScale = new Vector3(PhaseTrackLayout.WallThickness, 3f, Length);
+                leftWall.localPosition = new Vector3(PhaseTrackLayout.GetWallCenterX(settings, -1), 1.5f, Length * 0.5f);
+            }
+
+            if (rightWall != null)
+            {
+                rightWall.localScale = new Vector3(PhaseTrackLayout.WallThickness, 3f, Length);
+                rightWall.localPosition = new Vector3(PhaseTrackLayout.GetWallCenterX(settings, 1), 1.5f, Length * 0.5f);
+            }
         }
 
         static void SetMaterial(Transform target, Material material)

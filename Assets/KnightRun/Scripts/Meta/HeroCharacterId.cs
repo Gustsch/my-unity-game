@@ -7,6 +7,6 @@ namespace KnightRun.Meta
         Ninja,
         Barbarian,
         Alchemist,
-        Mage,
+        Hunter,
     }
 }

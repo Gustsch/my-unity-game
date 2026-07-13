@@ -130,8 +130,16 @@ namespace KnightRun.Gameplay
             transform.position += step;
             transform.position += RunForwardMotion.GetDelta();
 
+            if (ProjectileTrackBounds.IsBeyondWalls(transform.position))
+            {
+                CompleteReturn();
+                return;
+            }
+
             if (offset.sqrMagnitude > 0.01f)
+            {
                 transform.rotation = Quaternion.LookRotation(offset.normalized, Vector3.up);
+            }
         }
 
         void TryHit()

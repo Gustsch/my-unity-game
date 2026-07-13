@@ -67,15 +67,30 @@ namespace KnightRun.World
             if (GameManager.Instance == null || GameManager.Instance.State != GameState.Running)
                 return;
 
-            if (PhaseBossController.Instance != null && PhaseBossController.Instance.IsBossFightActive)
+            if (ShouldBlockEnemySpawns())
                 return;
+
+            RunPhaseSettings settings = GetCurrentSettings();
+            float spawnMultiplier = GetEnemySpawnMultiplier(settings);
 
             continuousSpawnTimer -= Time.deltaTime;
             while (continuousSpawnTimer <= 0f)
             {
                 continuousSpawnTimer += ContinuousSpawnInterval;
-                SpawnEnemyAheadOfPlayer();
+                if (Random.value <= spawnMultiplier)
+                    SpawnEnemyAheadOfPlayer();
             }
+        }
+
+        static bool ShouldBlockEnemySpawns()
+        {
+            PhaseBossController bossController = PhaseBossController.Instance;
+            return bossController != null && bossController.ShouldBlockEnemySpawns;
+        }
+
+        static float GetEnemySpawnMultiplier(RunPhaseSettings settings)
+        {
+            return Mathf.Clamp(settings.enemySpawnMultiplier, 0f, 1f);
         }
 
         RunPhaseSettings GetCurrentSettings()
@@ -106,15 +121,19 @@ namespace KnightRun.World
 
         void PopulateSegment(TrackSegment segment, RunPhaseSettings settings)
         {
-            if (PhaseBossController.Instance != null && PhaseBossController.Instance.IsBossFightActive)
+            if (ShouldBlockEnemySpawns())
                 return;
 
             var contentRoot = new GameObject("Content").transform;
             contentRoot.SetParent(segment.transform, false);
 
+            float spawnMultiplier = GetEnemySpawnMultiplier(settings);
             int enemyCount = Random.Range(MinEnemiesPerSegment, MaxEnemiesPerSegment + 1);
             for (int i = 0; i < enemyCount; i++)
             {
+                if (Random.value > spawnMultiplier)
+                    continue;
+
                 if (!TryRollEnemySpawnZ(segment, out float spawnZ))
                     break;
 
@@ -130,7 +149,7 @@ namespace KnightRun.World
             if (settings.useLaneMovement)
                 return LanePositions[Random.Range(0, LanePositions.Length)];
 
-            return Random.Range(RunnerController.TrackMinX, RunnerController.TrackMaxX);
+            return Random.Range(PhaseTrackLayout.GetPlayableMinX(settings), PhaseTrackLayout.GetPlayableMaxX(settings));
         }
 
         static float[] LanePositions => RunnerController.LanePositions;
@@ -204,6 +223,9 @@ namespace KnightRun.World
         void HandlePhaseChanged(RunPhase phase, RunPhaseSettings settings)
         {
             UpdateAmbient(settings);
+
+            foreach (TrackSegment segment in activeSegments)
+                segment.ApplyLayout(settings);
         }
 
         static void UpdateAmbient(RunPhaseSettings settings)

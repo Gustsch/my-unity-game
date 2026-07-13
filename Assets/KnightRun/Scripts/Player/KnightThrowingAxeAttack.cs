@@ -95,9 +95,7 @@ namespace KnightRun.Player
                     ? axeVisual.ThrowPosition
                     : transform.position + Vector3.up * ThrowHeight;
 
-                float spread = (i - (volleyCount - 1) * 0.5f) * 8f;
-                float angle = Random.Range(-SkillPool.ThrowingAxeDirectionSpread, SkillPool.ThrowingAxeDirectionSpread) + spread;
-                Vector3 direction = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+                Vector3 direction = GetThrowDirection(spawnPosition);
 
                 ThrowingAxeProjectile.Spawn(
                     spawnPosition,
@@ -106,6 +104,26 @@ namespace KnightRun.Player
                     SkillPool.ThrowingAxeSpeed,
                     UpgradeStats.AttackAreaMultiplier);
             }
+        }
+
+        static Vector3 GetThrowDirection(Vector3 spawnPosition)
+        {
+            Transform target = null;
+            if (ScreenCombatUtility.TryGetRandomOnScreenTarget(out Transform onScreenTarget))
+                target = onScreenTarget;
+            else
+                target = CombatTarget.FindNearest(spawnPosition);
+
+            if (target == null)
+                return Vector3.forward;
+
+            Vector3 direction = target.position - spawnPosition;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.001f)
+                return Vector3.forward;
+
+            direction.Normalize();
+            return direction;
         }
     }
 }

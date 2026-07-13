@@ -9,17 +9,19 @@ namespace KnightRun.Gameplay
             if (hit == null || hit.CompareTag("Player"))
                 return false;
 
+            int roundedDamage = Mathf.Max(1, Mathf.RoundToInt(damage));
+
             Enemy enemy = hit.GetComponent<Enemy>() ?? hit.GetComponentInParent<Enemy>();
             if (enemy != null)
             {
-                enemy.TakeDamage(damage);
+                enemy.TakeDamage(roundedDamage);
                 return true;
             }
 
             Boss boss = hit.GetComponent<Boss>() ?? hit.GetComponentInParent<Boss>();
             if (boss != null)
             {
-                boss.TakeDamage(damage);
+                boss.TakeDamage(roundedDamage);
                 return true;
             }
 

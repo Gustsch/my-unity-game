@@ -1,5 +1,6 @@
 using KnightRun;
 using KnightRun.Core;
+using KnightRun.Gameplay;
 using KnightRun.Player;
 using KnightRun.Progression;
 using UnityEngine;
@@ -20,7 +21,21 @@ namespace KnightRun.UI
         Text hintText;
         Text stateText;
         Image xpBarFill;
+        RectTransform xpBarFillRect;
         Text xpBarText;
+        float displayedXpFill;
+        float targetXpFill;
+
+        GameObject bossHpBarRoot;
+        Image bossHpBarFill;
+        RectTransform bossHpBarFillRect;
+        Text bossHpBarText;
+        Boss trackedBoss;
+        float displayedBossHpFill;
+        float targetBossHpFill;
+
+        const float XpBarFillSpeed = 4f;
+        const float BossHpBarFillSpeed = 6f;
 
         GameObject pausePanel;
         Text pauseTitleText;
@@ -46,6 +61,7 @@ namespace KnightRun.UI
             healthText = CreateText(canvasRoot.transform, "Vida: 100", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -130f));
             enemiesDefeatedText = CreateText(canvasRoot.transform, "Inimigos: 0", 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -170f));
             BuildXpBar(canvasRoot.transform);
+            BuildBossHpBar(canvasRoot.transform);
             scoreText = CreateText(canvasRoot.transform, "Score: 0", 28, TextAnchor.UpperRight, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, -90f));
             UiFactory.CreateAnchoredButton(
                 canvasRoot.transform,
@@ -120,6 +136,10 @@ namespace KnightRun.UI
 
             if (gameManager.State == GameState.GameOver && KnightInput.GetKeyDown(KeyCode.M))
                 GameBootstrap.ReturnToMainMenu();
+
+            UpdateXpBarAnimation();
+            UpdateBossHpBarTracking();
+            UpdateBossHpBarAnimation();
         }
 
         void OnDestroy()
@@ -139,6 +159,8 @@ namespace KnightRun.UI
 
             if (upgradeManager != null)
                 upgradeManager.OnXpChanged -= UpdateXpBar;
+
+            ClearTrackedBoss();
         }
 
         void UpdateScore(int score)
@@ -161,11 +183,131 @@ namespace KnightRun.UI
 
         void UpdateXpBar(int current, int required)
         {
-            if (xpBarFill != null)
-                xpBarFill.fillAmount = required > 0 ? Mathf.Clamp01((float)current / required) : 0f;
+            targetXpFill = required > 0 ? Mathf.Clamp01((float)current / required) : 0f;
 
             if (xpBarText != null)
                 xpBarText.text = $"XP {current}/{required}";
+
+            if (Mathf.Approximately(targetXpFill, 0f))
+            {
+                displayedXpFill = 0f;
+                ApplyXpFill(0f);
+            }
+        }
+
+        void UpdateXpBarAnimation()
+        {
+            if (xpBarFillRect == null)
+                return;
+
+            if (Mathf.Approximately(displayedXpFill, targetXpFill))
+                return;
+
+            displayedXpFill = Mathf.MoveTowards(displayedXpFill, targetXpFill, XpBarFillSpeed * Time.deltaTime);
+            ApplyXpFill(displayedXpFill);
+        }
+
+        void ApplyXpFill(float amount)
+        {
+            ApplyBarFill(xpBarFillRect, amount);
+        }
+
+        void UpdateBossHpBarTracking()
+        {
+            Boss activeBoss = PhaseBossController.Instance?.ActiveBoss;
+            bool barVisible = bossHpBarRoot != null && bossHpBarRoot.activeSelf;
+
+            if (activeBoss == null)
+            {
+                if (trackedBoss != null || barVisible)
+                    SetTrackedBoss(null);
+                return;
+            }
+
+            if (!ReferenceEquals(trackedBoss, activeBoss))
+                SetTrackedBoss(activeBoss);
+        }
+
+        void SetTrackedBoss(Boss boss)
+        {
+            ClearTrackedBoss();
+            trackedBoss = boss;
+
+            if (trackedBoss == null)
+            {
+                HideBossHpBar();
+                return;
+            }
+
+            trackedBoss.OnHealthChanged += UpdateBossHpBar;
+            ShowBossHpBar();
+            UpdateBossHpBar(trackedBoss.CurrentHealth, trackedBoss.MaxHealth);
+            displayedBossHpFill = targetBossHpFill;
+            ApplyBarFill(bossHpBarFillRect, displayedBossHpFill);
+        }
+
+        void ClearTrackedBoss()
+        {
+            if (trackedBoss != null)
+                trackedBoss.OnHealthChanged -= UpdateBossHpBar;
+
+            trackedBoss = null;
+        }
+
+        void UpdateBossHpBar(float current, float max)
+        {
+            targetBossHpFill = max > 0f ? Mathf.Clamp01(current / max) : 0f;
+
+            if (bossHpBarText != null)
+                bossHpBarText.text = $"BOSS {Mathf.CeilToInt(Mathf.Max(0f, current))}/{Mathf.CeilToInt(max)}";
+
+            if (current <= 0f)
+            {
+                ClearTrackedBoss();
+                HideBossHpBar();
+            }
+        }
+
+        void UpdateBossHpBarAnimation()
+        {
+            if (bossHpBarFillRect == null || bossHpBarRoot == null || !bossHpBarRoot.activeSelf)
+                return;
+
+            if (Mathf.Approximately(displayedBossHpFill, targetBossHpFill))
+                return;
+
+            displayedBossHpFill = Mathf.MoveTowards(
+                displayedBossHpFill,
+                targetBossHpFill,
+                BossHpBarFillSpeed * Time.deltaTime);
+            ApplyBarFill(bossHpBarFillRect, displayedBossHpFill);
+        }
+
+        void ShowBossHpBar()
+        {
+            if (bossHpBarRoot != null)
+                bossHpBarRoot.SetActive(true);
+        }
+
+        void HideBossHpBar()
+        {
+            if (bossHpBarRoot != null)
+                bossHpBarRoot.SetActive(false);
+
+            displayedBossHpFill = 0f;
+            targetBossHpFill = 0f;
+        }
+
+        static void ApplyBarFill(RectTransform fillRect, float amount)
+        {
+            if (fillRect == null)
+                return;
+
+            amount = Mathf.Clamp01(amount);
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(amount, 1f);
+            fillRect.offsetMin = new Vector2(2f, 2f);
+            fillRect.offsetMax = amount >= 1f ? new Vector2(-2f, -2f) : new Vector2(0f, -2f);
         }
 
         void BuildXpBar(Transform parent)
@@ -174,31 +316,41 @@ namespace KnightRun.UI
             backgroundGo.transform.SetParent(parent, false);
 
             var backgroundRect = backgroundGo.AddComponent<RectTransform>();
-            backgroundRect.anchorMin = new Vector2(0.5f, 1f);
-            backgroundRect.anchorMax = new Vector2(0.5f, 1f);
-            backgroundRect.pivot = new Vector2(0.5f, 1f);
-            backgroundRect.anchoredPosition = new Vector2(0f, -205f);
+            backgroundRect.anchorMin = new Vector2(0.5f, 0f);
+            backgroundRect.anchorMax = new Vector2(0.5f, 0f);
+            backgroundRect.pivot = new Vector2(0.5f, 0f);
+            backgroundRect.anchoredPosition = new Vector2(0f, 72f);
             backgroundRect.sizeDelta = new Vector2(520f, 24f);
 
             var backgroundImage = backgroundGo.AddComponent<Image>();
             backgroundImage.color = new Color(0.08f, 0.1f, 0.16f, 0.92f);
             backgroundImage.raycastTarget = false;
 
-            var fillGo = new GameObject("XpBarFill");
-            fillGo.transform.SetParent(backgroundGo.transform, false);
+            var trackGo = new GameObject("XpBarTrack");
+            trackGo.transform.SetParent(backgroundGo.transform, false);
 
-            var fillRect = fillGo.AddComponent<RectTransform>();
-            fillRect.anchorMin = Vector2.zero;
-            fillRect.anchorMax = Vector2.one;
-            fillRect.offsetMin = new Vector2(2f, 2f);
-            fillRect.offsetMax = new Vector2(-2f, -2f);
+            var trackRect = trackGo.AddComponent<RectTransform>();
+            trackRect.anchorMin = Vector2.zero;
+            trackRect.anchorMax = Vector2.one;
+            trackRect.offsetMin = new Vector2(2f, 2f);
+            trackRect.offsetMax = new Vector2(-2f, -2f);
+
+            var trackImage = trackGo.AddComponent<Image>();
+            trackImage.color = new Color(0.04f, 0.06f, 0.1f, 0.95f);
+            trackImage.raycastTarget = false;
+
+            var fillGo = new GameObject("XpBarFill");
+            fillGo.transform.SetParent(trackGo.transform, false);
+
+            xpBarFillRect = fillGo.AddComponent<RectTransform>();
+            xpBarFillRect.anchorMin = Vector2.zero;
+            xpBarFillRect.anchorMax = Vector2.zero;
+            xpBarFillRect.pivot = new Vector2(0f, 0.5f);
+            xpBarFillRect.offsetMin = Vector2.zero;
+            xpBarFillRect.offsetMax = Vector2.zero;
 
             xpBarFill = fillGo.AddComponent<Image>();
             xpBarFill.color = new Color(0.4f, 0.82f, 1f, 0.95f);
-            xpBarFill.type = Image.Type.Filled;
-            xpBarFill.fillMethod = Image.FillMethod.Horizontal;
-            xpBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            xpBarFill.fillAmount = 0f;
             xpBarFill.raycastTarget = false;
 
             var textGo = new GameObject("XpBarText");
@@ -217,6 +369,73 @@ namespace KnightRun.UI
             xpBarText.color = Color.white;
             xpBarText.raycastTarget = false;
             xpBarText.text = "XP 0/1";
+            displayedXpFill = 0f;
+            targetXpFill = 0f;
+            ApplyXpFill(0f);
+        }
+
+        void BuildBossHpBar(Transform parent)
+        {
+            bossHpBarRoot = new GameObject("BossHpBarBackground");
+            bossHpBarRoot.transform.SetParent(parent, false);
+
+            var backgroundRect = bossHpBarRoot.AddComponent<RectTransform>();
+            backgroundRect.anchorMin = new Vector2(0.5f, 1f);
+            backgroundRect.anchorMax = new Vector2(0.5f, 1f);
+            backgroundRect.pivot = new Vector2(0.5f, 1f);
+            backgroundRect.anchoredPosition = new Vector2(0f, -235f);
+            backgroundRect.sizeDelta = new Vector2(520f, 28f);
+
+            var backgroundImage = bossHpBarRoot.AddComponent<Image>();
+            backgroundImage.color = new Color(0.16f, 0.06f, 0.08f, 0.94f);
+            backgroundImage.raycastTarget = false;
+
+            var trackGo = new GameObject("BossHpBarTrack");
+            trackGo.transform.SetParent(bossHpBarRoot.transform, false);
+
+            var trackRect = trackGo.AddComponent<RectTransform>();
+            trackRect.anchorMin = Vector2.zero;
+            trackRect.anchorMax = Vector2.one;
+            trackRect.offsetMin = new Vector2(2f, 2f);
+            trackRect.offsetMax = new Vector2(-2f, -2f);
+
+            var trackImage = trackGo.AddComponent<Image>();
+            trackImage.color = new Color(0.08f, 0.03f, 0.04f, 0.95f);
+            trackImage.raycastTarget = false;
+
+            var fillGo = new GameObject("BossHpBarFill");
+            fillGo.transform.SetParent(trackGo.transform, false);
+
+            bossHpBarFillRect = fillGo.AddComponent<RectTransform>();
+            bossHpBarFillRect.anchorMin = Vector2.zero;
+            bossHpBarFillRect.anchorMax = Vector2.zero;
+            bossHpBarFillRect.pivot = new Vector2(0f, 0.5f);
+            bossHpBarFillRect.offsetMin = Vector2.zero;
+            bossHpBarFillRect.offsetMax = Vector2.zero;
+
+            bossHpBarFill = fillGo.AddComponent<Image>();
+            bossHpBarFill.color = new Color(0.92f, 0.18f, 0.2f, 0.96f);
+            bossHpBarFill.raycastTarget = false;
+
+            var textGo = new GameObject("BossHpBarText");
+            textGo.transform.SetParent(bossHpBarRoot.transform, false);
+
+            var textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            bossHpBarText = textGo.AddComponent<Text>();
+            bossHpBarText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            bossHpBarText.fontSize = 16;
+            bossHpBarText.fontStyle = FontStyle.Bold;
+            bossHpBarText.alignment = TextAnchor.MiddleCenter;
+            bossHpBarText.color = Color.white;
+            bossHpBarText.raycastTarget = false;
+            bossHpBarText.text = "BOSS";
+
+            bossHpBarRoot.SetActive(false);
         }
 
         void TogglePause()

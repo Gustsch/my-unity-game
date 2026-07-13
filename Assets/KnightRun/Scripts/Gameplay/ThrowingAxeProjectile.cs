@@ -7,7 +7,7 @@ namespace KnightRun.Gameplay
     public class ThrowingAxeProjectile : MonoBehaviour
     {
         const float MaxLifetime = 4f;
-        const float MaxTravelDistance = 42f;
+        const float MaxTravelDistance = 70f;
         const float BaseHitRadius = 0.5f;
         const float HitboxHeight = 8f;
 
@@ -80,6 +80,12 @@ namespace KnightRun.Gameplay
             transform.position += direction * speed * Time.deltaTime;
             transform.position += RunForwardMotion.GetDelta();
             transform.Rotate(Vector3.right, 540f * Time.deltaTime, Space.Self);
+
+            if (ProjectileTrackBounds.IsBeyondWalls(transform.position))
+            {
+                Destroy(gameObject);
+                return;
+            }
 
             if ((transform.position - startPosition).sqrMagnitude >= MaxTravelDistance * MaxTravelDistance)
             {

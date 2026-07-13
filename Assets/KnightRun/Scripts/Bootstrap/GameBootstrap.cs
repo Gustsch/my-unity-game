@@ -202,7 +202,7 @@ namespace KnightRun
             playerGo.AddComponent<KnightSwordAttack>();
             playerGo.AddComponent<KnightBowAttack>();
             playerGo.AddComponent<KnightShurikenAttack>();
-            playerGo.AddComponent<KnightMagicBookAura>();
+            playerGo.AddComponent<KnightMagicBookOrbit>();
             playerGo.AddComponent<KnightBombAttack>();
             playerGo.AddComponent<KnightBoomerangAttack>();
             playerGo.AddComponent<KnightThrowingAxeAttack>();

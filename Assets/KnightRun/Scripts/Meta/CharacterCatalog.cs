@@ -66,10 +66,10 @@ namespace KnightRun.Meta
             },
             new CharacterDefinition
             {
-                Id = HeroCharacterId.Mage,
-                DisplayName = "Mago",
-                StartingWeapon = HeroSkillId.MagicBook,
-                WeaponName = "Livro de Magia",
+                Id = HeroCharacterId.Hunter,
+                DisplayName = "Cacador",
+                StartingWeapon = HeroSkillId.Boomerang,
+                WeaponName = "Bumerangue",
                 UnlockAfterBossPhaseIndex = 4,
                 PurchaseCost = 700
             }
