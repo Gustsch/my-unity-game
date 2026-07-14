@@ -310,7 +310,7 @@ namespace KnightRun.World
             enemyGo.transform.position = new Vector3(x, 0f, z);
 
             var enemy = enemyGo.AddComponent<Enemy>();
-            enemy.Build(settings.phase);
+            enemy.Build();
 
             int health = EnemyCombatStats.RollHealthForPhase(settings);
             bool isElite = Random.value < EnemyCombatStats.EliteSpawnChance;

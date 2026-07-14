@@ -20,29 +20,29 @@ namespace KnightRun.Progression
         }
 
         public const float IronSkinReductionPerLevel = 0.1f;
-        public const float QuickSlashSpeedPerLevel = 0.08f;
+        public const float QuickSlashSpeedPerLevel = 0.1f;
         public const float WideArcAreaPerLevel = 0.2f;
         public const int VigorHealthPerLevel = 100;
-        public const float AgileStepsSpeedPerLevel = 0.08f;
+        public const float AgileStepsSpeedPerLevel = 0.1f;
         public const float ExtendedSlideDurationPerLevel = 0.1f;
         public const float BowAttackInterval = 1.2f;
         public const float BowMinAttackInterval = 0.45f;
         public const float ShurikenAttackInterval = 1.5f;
         public const float ShurikenMinAttackInterval = 0.1f;
-        public const float ShurikenBaseDamage = 4f;
-        public const float ShurikenDamagePerLevel = 4f;
+        public const float ShurikenBaseDamage = 5f;
+        public const float ShurikenDamagePerLevel = 5f;
         public const float MagicBookOrbitRadius = 1.7f;
         public const float MagicBookBaseSpinSpeed = 160f;
         public const float MagicBookBaseHitRadius = 0.5f;
         public const float MagicBookBaseScale = 1f;
         public const float MagicBookOrbitHeight = 1.1f;
-        public const float MagicBookContactDamage = 4f;
+        public const float MagicBookContactDamage = 5f;
         public const float MagicBookContactDamagePerLevel = 2f;
         public const float BombAttackInterval = 2f;
         public const float BombBaseDamage = 20f;
         public const float BombMinAttackInterval = 0.8f;
         public const float BombFixedThrowDistance = 25f;
-        public const float BombBaseExplosionRadius = 2f;
+        public const float BombBaseExplosionRadius = 3f;
         public const float BoomerangBaseDamage = 20f;
         public const float BoomerangDamagePerLevel = 5f;
         public const float BoomerangBaseSpeed = 12f;

@@ -39,8 +39,8 @@ namespace KnightRun.Player
         float chillTimer;
         float chillMoveMultiplier = 1f;
 
-        const float LaneSwitchSpeed = 10000f;
-        const float BaseFreeMoveSpeed = 220;
+        const float LaneSwitchSpeed = 20f;
+        const float BaseFreeMoveSpeed = 5f;
         const float JumpForce = 10f;
         const float Gravity = -32f;
         const float BaseSlideDuration = 0.55f;
@@ -375,9 +375,6 @@ namespace KnightRun.Player
             }
 
             verticalVelocity += Gravity * Time.deltaTime;
-
-            // X ja foi calculado com deltaTime (ou MoveTowards).
-            // Y/Z precisam de deltaTime uma unica vez.
             float deltaX = position.x - transform.position.x;
             float deltaY = verticalVelocity * Time.deltaTime;
             float deltaZ = speed * phaseMultiplier * Time.deltaTime;
