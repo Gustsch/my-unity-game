@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using KnightRun.Core;
 using KnightRun.World;
 using UnityEngine;
@@ -17,14 +18,16 @@ namespace KnightRun.Gameplay
         float speed;
         float areaMultiplier;
         float lifetime;
-        bool hasHit;
+        int remainingHits;
+        readonly HashSet<int> hitTargets = new HashSet<int>();
 
         public static ThrowingAxeProjectile Spawn(
             Vector3 position,
             Vector3 direction,
             float damage,
             float speed,
-            float areaMultiplier)
+            float areaMultiplier,
+            int pierceExtraHits = 0)
         {
             areaMultiplier = Mathf.Max(1f, areaMultiplier);
             direction.y = 0f;
@@ -58,12 +61,13 @@ namespace KnightRun.Gameplay
             projectile.damage = Mathf.Max(0.01f, damage);
             projectile.speed = Mathf.Max(4f, speed);
             projectile.areaMultiplier = areaMultiplier;
+            projectile.remainingHits = 1 + Mathf.Max(0, pierceExtraHits);
             return projectile;
         }
 
         void Update()
         {
-            if (hasHit)
+            if (remainingHits <= 0)
                 return;
 
             GameManager gameManager = GameManager.Instance;
@@ -114,11 +118,14 @@ namespace KnightRun.Gameplay
                 if (hit.CompareTag("Player"))
                     continue;
 
-                if (CombatTarget.TryApplyDamage(hit, damage))
+                if (CombatTarget.TryApplyDamage(hit, damage, hitTargets))
                 {
-                    hasHit = true;
-                    Destroy(gameObject);
-                    return;
+                    remainingHits--;
+                    if (remainingHits <= 0)
+                    {
+                        Destroy(gameObject);
+                        return;
+                    }
                 }
             }
         }

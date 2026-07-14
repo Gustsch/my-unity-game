@@ -89,6 +89,7 @@ namespace KnightRun.Player
         void ThrowAxes()
         {
             int volleyCount = UpgradeStats.AttackVolleyCount;
+            int pierceExtraHits = UpgradeStats.RollPierceExtraHits();
             for (int i = 0; i < volleyCount; i++)
             {
                 Vector3 spawnPosition = axeVisual != null
@@ -102,7 +103,8 @@ namespace KnightRun.Player
                     direction,
                     UpgradeStats.ThrowingAxeDamage,
                     SkillPool.ThrowingAxeSpeed,
-                    UpgradeStats.AttackAreaMultiplier);
+                    UpgradeStats.AttackAreaMultiplier,
+                    pierceExtraHits);
             }
         }
 

@@ -59,9 +59,8 @@ namespace KnightRun.Player
         {
             get
             {
-                float multiplier = upgradeStats != null ? upgradeStats.MoveSpeedMultiplier : 1f;
                 float chill = IsChilled ? chillMoveMultiplier : 1f;
-                return BaseFreeMoveSpeed * multiplier * MetaBonuses.MoveSpeedMultiplier * chill;
+                return BaseFreeMoveSpeed * MetaBonuses.MoveSpeedMultiplier * chill;
             }
         }
 
@@ -71,8 +70,7 @@ namespace KnightRun.Player
         {
             get
             {
-                float multiplier = upgradeStats != null ? upgradeStats.SlideDurationMultiplier : 1f;
-                return BaseSlideDuration * multiplier;
+                return BaseSlideDuration;
             }
         }
 
@@ -383,11 +381,9 @@ namespace KnightRun.Player
 
         float ApplyIceMovement(float currentX)
         {
-            float speedMultiplier = upgradeStats != null ? upgradeStats.MoveSpeedMultiplier : 1f;
             float chilledMultiplier = IsChilled ? chillMoveMultiplier : 1f;
             float targetVelocity = horizontalInput
                 * IceMaxHorizontalSpeed
-                * speedMultiplier
                 * MetaBonuses.MoveSpeedMultiplier
                 * chilledMultiplier;
             bool hasInput = Mathf.Abs(horizontalInput) > 0.01f;

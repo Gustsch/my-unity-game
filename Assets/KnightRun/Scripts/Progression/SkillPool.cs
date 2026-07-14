@@ -21,10 +21,13 @@ namespace KnightRun.Progression
 
         public const float IronSkinReductionPerLevel = 0.1f;
         public const float QuickSlashSpeedPerLevel = 0.1f;
-        public const float WideArcAreaPerLevel = 0.2f;
+        public const float PiercingChancePerLevel = 0.2f;
+        public const int PiercingGuaranteedEveryLevels = 5;
+        public const float CriticalStrikeChancePerLevel = 0.05f;
+        public const float CriticalStrikeDamageMultiplier = 2f;
+        public const float ExperienceBoostPerLevel = 0.15f;
+        public const int BaseXpPerLevel = 10;
         public const int VigorHealthPerLevel = 100;
-        public const float AgileStepsSpeedPerLevel = 0.1f;
-        public const float ExtendedSlideDurationPerLevel = 0.1f;
         public const float BowAttackInterval = 1.2f;
         public const float BowMinAttackInterval = 0.45f;
         public const float ShurikenAttackInterval = 1.5f;
@@ -62,10 +65,10 @@ namespace KnightRun.Progression
             new SkillDefinition { Id = HeroSkillId.Boomerang, DisplayName = "Bumerangue", Category = UpgradeCategory.Weapon },
             new SkillDefinition { Id = HeroSkillId.ThrowingAxe, DisplayName = "Machado de Arremesso", Category = UpgradeCategory.Weapon },
             new SkillDefinition { Id = HeroSkillId.QuickSlash, DisplayName = "Golpe Rapido", Category = UpgradeCategory.Skill },
-            new SkillDefinition { Id = HeroSkillId.WideArc, DisplayName = "Arco Amplo", Category = UpgradeCategory.Skill },
+            new SkillDefinition { Id = HeroSkillId.Piercing, DisplayName = "Perfuracao", Category = UpgradeCategory.Skill },
             new SkillDefinition { Id = HeroSkillId.Vigor, DisplayName = "Vigor", Category = UpgradeCategory.Skill },
-            new SkillDefinition { Id = HeroSkillId.AgileSteps, DisplayName = "Passos Ageis", Category = UpgradeCategory.Skill },
-            new SkillDefinition { Id = HeroSkillId.ExtendedSlide, DisplayName = "Slide Prolongado", Category = UpgradeCategory.Skill },
+            new SkillDefinition { Id = HeroSkillId.CriticalStrike, DisplayName = "Golpe Critico", Category = UpgradeCategory.Skill },
+            new SkillDefinition { Id = HeroSkillId.ExperienceBoost, DisplayName = "Sabedoria", Category = UpgradeCategory.Skill },
             new SkillDefinition { Id = HeroSkillId.IronSkin, DisplayName = "Pele de Ferro", Category = UpgradeCategory.Skill }
         };
 
@@ -93,6 +96,9 @@ namespace KnightRun.Progression
             {
                 int level = stats.GetLevel(skill.Id);
                 if (level >= MaxSkillLevel)
+                    continue;
+
+                if (skill.Id == HeroSkillId.Piercing && level == 0 && !stats.HasPierceWeapon())
                     continue;
 
                 if (level > 0 || stats.CanUnlockNew(skill))

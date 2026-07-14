@@ -1,4 +1,4 @@
-using KnightRun.Core;
+﻿using KnightRun.Core;
 using KnightRun.Player;
 using KnightRun.Progression;
 using KnightRun.World;
@@ -8,8 +8,8 @@ namespace KnightRun.Gameplay
 {
     public class ExperienceOrb : MonoBehaviour
     {
-        public const int DefaultValue = 1;
-        public const int EliteValue = 2;
+        public const int DefaultValue = 10;
+        public const int EliteValue = 20;
 
         public static int GetBossLevelXpValue()
         {

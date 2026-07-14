@@ -13,7 +13,7 @@ namespace KnightRun.Progression
 
         public static bool LevelUpEnabled = true;
 
-        public int XpRequiredForNextLevel { get; private set; } = 1;
+        public int XpRequiredForNextLevel { get; private set; } = SkillPool.BaseXpPerLevel;
         public int XpTowardNextLevel { get; private set; }
 
         public event Action<int, int> OnXpChanged;
@@ -46,12 +46,17 @@ namespace KnightRun.Progression
             if (amount <= 0)
                 return;
 
-            XpTowardNextLevel += amount;
+            if (heroStats == null)
+                heroStats = FindFirstObjectByType<HeroUpgradeStats>();
+
+            float multiplier = heroStats != null ? heroStats.ExperienceGainMultiplier : 1f;
+            int gained = Mathf.Max(1, Mathf.RoundToInt(amount * multiplier));
+            XpTowardNextLevel += gained;
 
             while (XpTowardNextLevel >= XpRequiredForNextLevel)
             {
                 XpTowardNextLevel -= XpRequiredForNextLevel;
-                XpRequiredForNextLevel++;
+                XpRequiredForNextLevel += SkillPool.BaseXpPerLevel;
                 NotifyXpChanged();
                 OfferUpgrades();
                 return;
@@ -108,7 +113,7 @@ namespace KnightRun.Progression
         public void ResetProgression()
         {
             currentOffer = null;
-            XpRequiredForNextLevel = 1;
+            XpRequiredForNextLevel = SkillPool.BaseXpPerLevel;
             XpTowardNextLevel = 0;
             NotifyXpChanged();
 

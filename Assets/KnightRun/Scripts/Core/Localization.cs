@@ -113,10 +113,10 @@ namespace KnightRun
                 HeroSkillId.Boomerang => T("skill.boomerang"),
                 HeroSkillId.ThrowingAxe => T("skill.throwing_axe"),
                 HeroSkillId.QuickSlash => T("skill.quick_slash"),
-                HeroSkillId.WideArc => T("skill.wide_arc"),
+                HeroSkillId.Piercing => T("skill.piercing"),
                 HeroSkillId.Vigor => T("skill.vigor"),
-                HeroSkillId.AgileSteps => T("skill.agile_steps"),
-                HeroSkillId.ExtendedSlide => T("skill.extended_slide"),
+                HeroSkillId.CriticalStrike => T("skill.critical_strike"),
+                HeroSkillId.ExperienceBoost => T("skill.experience_boost"),
                 HeroSkillId.IronSkin => T("skill.iron_skin"),
                 _ => id.ToString()
             };
@@ -139,10 +139,10 @@ namespace KnightRun
                 HeroSkillId.ThrowingAxe when nextLevel == 1 => Format(key, SkillPool.ThrowingAxeBaseDamage),
                 HeroSkillId.ThrowingAxe => Format(key, SkillPool.ThrowingAxeDamagePerLevel),
                 HeroSkillId.QuickSlash => Format(key, SkillPool.QuickSlashSpeedPerLevel * 100f),
-                HeroSkillId.WideArc => Format(key, SkillPool.WideArcAreaPerLevel * 100f),
+                HeroSkillId.Piercing => Format(key, SkillPool.PiercingChancePerLevel * 100f),
                 HeroSkillId.Vigor => Format(key, SkillPool.VigorHealthPerLevel),
-                HeroSkillId.AgileSteps => Format(key, SkillPool.AgileStepsSpeedPerLevel * 100f),
-                HeroSkillId.ExtendedSlide => Format(key, SkillPool.ExtendedSlideDurationPerLevel * 100f),
+                HeroSkillId.CriticalStrike => Format(key, SkillPool.CriticalStrikeChancePerLevel * 100f),
+                HeroSkillId.ExperienceBoost => Format(key, SkillPool.ExperienceBoostPerLevel * 100f),
                 HeroSkillId.IronSkin => Format(key, SkillPool.IronSkinReductionPerLevel * 100f),
                 _ => T(key)
             };
@@ -241,10 +241,10 @@ namespace KnightRun
                 HeroSkillId.Boomerang => "boomerang",
                 HeroSkillId.ThrowingAxe => "throwing_axe",
                 HeroSkillId.QuickSlash => "quick_slash",
-                HeroSkillId.WideArc => "wide_arc",
+                HeroSkillId.Piercing => "piercing",
                 HeroSkillId.Vigor => "vigor",
-                HeroSkillId.AgileSteps => "agile_steps",
-                HeroSkillId.ExtendedSlide => "extended_slide",
+                HeroSkillId.CriticalStrike => "critical_strike",
+                HeroSkillId.ExperienceBoost => "experience_boost",
                 HeroSkillId.IronSkin => "iron_skin",
                 _ => id.ToString().ToLowerInvariant()
             };

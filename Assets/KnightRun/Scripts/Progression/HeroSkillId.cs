@@ -10,10 +10,10 @@ namespace KnightRun.Progression
         Boomerang,
         ThrowingAxe,
         QuickSlash,
-        WideArc,
+        Piercing,
         Vigor,
-        AgileSteps,
-        ExtendedSlide,
+        CriticalStrike,
+        ExperienceBoost,
         IronSkin
     }
 }

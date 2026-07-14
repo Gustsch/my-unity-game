@@ -211,7 +211,8 @@ namespace KnightRun.Player
                 + Vector3.forward * (body.radius + 0.35f)
                 + Vector3.up * (AttackHitHeight * 0.55f);
 
-            SwordSlashProjectile.Spawn(spawnPosition, damage, areaMultiplier);
+            int pierce = UpgradeStats != null ? UpgradeStats.RollPierceExtraHits() : 0;
+            SwordSlashProjectile.Spawn(spawnPosition, damage, areaMultiplier, pierce);
         }
     }
 }

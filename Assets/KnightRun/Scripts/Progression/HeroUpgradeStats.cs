@@ -85,12 +85,30 @@ namespace KnightRun.Progression
                 return ScaleDamage(baseDamage);
             }
         }
+
         public float AttackSpeedMultiplier => 1f + GetLevel(HeroSkillId.QuickSlash) * SkillPool.QuickSlashSpeedPerLevel;
-        public float AttackAreaMultiplier => 1f + GetLevel(HeroSkillId.WideArc) * SkillPool.WideArcAreaPerLevel;
+        public float AttackAreaMultiplier => 1f;
         public int BonusMaxHealth => GetLevel(HeroSkillId.Vigor) * SkillPool.VigorHealthPerLevel;
-        public float MoveSpeedMultiplier => 1f + GetLevel(HeroSkillId.AgileSteps) * SkillPool.AgileStepsSpeedPerLevel;
-        public float SlideDurationMultiplier => 1f + GetLevel(HeroSkillId.ExtendedSlide) * SkillPool.ExtendedSlideDurationPerLevel;
         public float DamageReductionPercent => GetLevel(HeroSkillId.IronSkin) * SkillPool.IronSkinReductionPerLevel;
+        public float CriticalChance => GetLevel(HeroSkillId.CriticalStrike) * SkillPool.CriticalStrikeChancePerLevel;
+        public float ExperienceGainMultiplier => 1f + GetLevel(HeroSkillId.ExperienceBoost) * SkillPool.ExperienceBoostPerLevel;
+
+        public bool HasPierceWeapon()
+        {
+            return HasSword || HasBow || HasShuriken || HasThrowingAxe || HasBoomerang;
+        }
+
+        public int RollPierceExtraHits()
+        {
+            int level = GetLevel(HeroSkillId.Piercing);
+            if (level <= 0)
+                return 0;
+
+            int guaranteed = level / SkillPool.PiercingGuaranteedEveryLevels;
+            float residualChance = (level % SkillPool.PiercingGuaranteedEveryLevels) * SkillPool.PiercingChancePerLevel;
+            int bonus = residualChance > 0f && UnityEngine.Random.value < residualChance ? 1 : 0;
+            return guaranteed + bonus;
+        }
 
         static int ScaleDamage(int damage) =>
             Mathf.Max(1, Mathf.RoundToInt(damage * MetaBonuses.BaseDamageMultiplier));

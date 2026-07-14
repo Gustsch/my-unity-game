@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using KnightRun.Core;
 using KnightRun.World;
 using UnityEngine;
@@ -19,9 +20,10 @@ namespace KnightRun.Gameplay
         float lifetime;
         float ownTravelDistance;
         float maxTravelDistance;
-        bool hasHit;
+        int remainingHits;
+        readonly HashSet<int> hitTargets = new HashSet<int>();
 
-        public static ShurikenProjectile Spawn(Vector3 position, float damage, Vector3 direction, float areaMultiplier)
+        public static ShurikenProjectile Spawn(Vector3 position, float damage, Vector3 direction, float areaMultiplier, int pierceExtraHits = 0)
         {
             areaMultiplier = Mathf.Max(1f, areaMultiplier);
             if (direction.sqrMagnitude < 0.001f)
@@ -44,12 +46,13 @@ namespace KnightRun.Gameplay
             projectile.damage = Mathf.Max(0.01f, damage);
             projectile.areaMultiplier = areaMultiplier;
             projectile.maxTravelDistance = RunForwardMotion.GetScaledProjectileRange(BaseMaxTravelDistance);
+            projectile.remainingHits = 1 + Mathf.Max(0, pierceExtraHits);
             return projectile;
         }
 
         void Update()
         {
-            if (hasHit)
+            if (remainingHits <= 0)
                 return;
 
             GameManager gameManager = GameManager.Instance;
@@ -101,11 +104,14 @@ namespace KnightRun.Gameplay
                 if (hit.CompareTag("Player"))
                     continue;
 
-                if (CombatTarget.TryApplyDamage(hit, damage))
+                if (CombatTarget.TryApplyDamage(hit, damage, hitTargets))
                 {
-                    hasHit = true;
-                    Destroy(gameObject);
-                    return;
+                    remainingHits--;
+                    if (remainingHits <= 0)
+                    {
+                        Destroy(gameObject);
+                        return;
+                    }
                 }
             }
         }

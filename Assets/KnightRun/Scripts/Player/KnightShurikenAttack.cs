@@ -110,6 +110,7 @@ namespace KnightRun.Player
             aimDirection.Normalize();
 
             int volleyCount = UpgradeStats.AttackVolleyCount;
+            int pierceExtraHits = UpgradeStats.RollPierceExtraHits();
             for (int i = 0; i < volleyCount; i++)
             {
                 float angleOffset = (i - (volleyCount - 1) * 0.5f) * VolleyAngleSpread;
@@ -119,7 +120,8 @@ namespace KnightRun.Player
                     spawnPosition,
                     UpgradeStats.ShurikenDamage,
                     direction,
-                    UpgradeStats.AttackAreaMultiplier);
+                    UpgradeStats.AttackAreaMultiplier,
+                    pierceExtraHits);
             }
         }
 

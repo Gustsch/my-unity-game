@@ -97,7 +97,8 @@ namespace KnightRun.Player
                 UpgradeStats.BoomerangDamage,
                 TravelSpeed,
                 UpgradeStats.AttackAreaMultiplier,
-                HandleBoomerangReturned);
+                HandleBoomerangReturned,
+                UpgradeStats.RollPierceExtraHits());
         }
 
         void HandleBoomerangReturned()

@@ -10,9 +10,12 @@ namespace KnightRun.Gameplay
         Transform player;
         Transform meshTransform;
         BoxCollider bodyCollider;
+        Animator skeletonAnimator;
+        RuntimeAnimatorController skeletonWalkController;
         GameManager gameManager;
         bool isDead;
         bool isKnockedDown;
+        bool usesSkeletonVisual;
         float knockdownTimer;
         int maxHealth;
         float currentHealth;
@@ -34,6 +37,11 @@ namespace KnightRun.Gameplay
         static readonly Color EliteTint = new Color(0.28f, 0.28f, 0.32f);
         static readonly Color FrozenTint = new Color(0.55f, 0.82f, 1f);
         const string GoblinVisualResourcesPath = "KnightRun/Enemies";
+        const string SkeletonVisualResourcePath = "KnightRun/Skeletons/skeleton";
+        const string SkeletonDeathAnimatorPath = "KnightRun/Skeletons/death";
+        const string SkeletonIdleAnimatorPath = "KnightRun/Skeletons/skeleton_idle";
+        const string SkeletonAnimationStateName = "anim";
+        const float SkeletonDeathDuration = 1.45f;
         const float BodySize = 1f;
         const float MoveSpeed = 5f;
         const float DespawnBehindDistance = 10f;
@@ -45,6 +53,8 @@ namespace KnightRun.Gameplay
         const float MaxKnockbackDistance = 0.4f;
         const float EliteMaxKnockbackDistance = 0.22f;
         const float EliteSizeMultiplier = 2f;
+        const float SkeletonVisualScale = 1f;
+        const float SkeletonEliteVisualMultiplier = 1.5f;
         const float KnockbackCloseDistance = 3f;
         const float KnockbackFarDistance = 18f;
 
@@ -56,8 +66,15 @@ namespace KnightRun.Gameplay
         static readonly Quaternion MeshKnockedRotation = Quaternion.Euler(0f, 0f, 90f);
         static GameObject[] goblinVisualPrefabs;
         static bool goblinVisualLoadAttempted;
+        static GameObject skeletonVisualPrefab;
+        static bool skeletonVisualLoadAttempted;
+        static RuntimeAnimatorController skeletonDeathController;
+        static RuntimeAnimatorController skeletonIdleController;
+        static bool skeletonAnimatorLoadAttempted;
+        static Shader urpLitShader;
+        static MaterialPropertyBlock tintPropertyBlock;
 
-        public void Build()
+        public void Build(int difficultyPhaseNumber = 1)
         {
             gameObject.name = "Enemy";
 
@@ -66,7 +83,7 @@ namespace KnightRun.Gameplay
             meshTransform.localScale = MeshStandScale;
             meshTransform.localPosition = MeshStandPosition;
 
-            BuildVisual(meshTransform);
+            BuildVisual(meshTransform, difficultyPhaseNumber >= 2);
 
             bodyCollider = gameObject.AddComponent<BoxCollider>();
             bodyCollider.isTrigger = true;
@@ -74,18 +91,31 @@ namespace KnightRun.Gameplay
             bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
         }
 
-        void BuildVisual(Transform root)
+        void BuildVisual(Transform root, bool useSkeleton)
         {
-            GameObject prefab = GetRandomGoblinVisual();
+            GameObject prefab = useSkeleton ? GetSkeletonVisual() : GetRandomGoblinVisual();
+            bool isSkeletonVisual = useSkeleton && prefab != null;
+            if (prefab == null && useSkeleton)
+                prefab = GetRandomGoblinVisual();
+
             if (prefab != null)
             {
-                GameObject goblin = Instantiate(prefab, root, false);
-                goblin.name = "Goblin";
-                goblin.transform.localPosition = new Vector3(0f, -BodySize * 0.5f, 0f);
-                goblin.transform.localRotation = Quaternion.identity;
-                goblin.transform.localScale = Vector3.one;
+                usesSkeletonVisual = isSkeletonVisual;
+                GameObject visual = Instantiate(prefab, root, false);
+                visual.name = isSkeletonVisual ? "Skeleton" : "Goblin";
+                visual.transform.localPosition = new Vector3(0f, -BodySize * 0.5f, 0f);
+                visual.transform.localRotation = Quaternion.identity;
+                visual.transform.localScale = isSkeletonVisual
+                    ? Vector3.one * SkeletonVisualScale
+                    : Vector3.one;
 
-                foreach (Collider visualCollider in goblin.GetComponentsInChildren<Collider>(true))
+                if (isSkeletonVisual)
+                {
+                    EnsureUrpMaterials(visual);
+                    SetupSkeletonAnimator(visual);
+                }
+
+                foreach (Collider visualCollider in visual.GetComponentsInChildren<Collider>(true))
                 {
                     visualCollider.enabled = false;
                     Destroy(visualCollider);
@@ -119,6 +149,105 @@ namespace KnightRun.Gameplay
             return goblinVisualPrefabs[Random.Range(0, goblinVisualPrefabs.Length)];
         }
 
+        static GameObject GetSkeletonVisual()
+        {
+            if (!skeletonVisualLoadAttempted)
+            {
+                skeletonVisualLoadAttempted = true;
+                skeletonVisualPrefab = Resources.Load<GameObject>(SkeletonVisualResourcePath);
+
+                if (skeletonVisualPrefab == null)
+                    Debug.LogWarning($"Skeleton visual not found at Resources/{SkeletonVisualResourcePath}. Using goblin fallback.");
+            }
+
+            return skeletonVisualPrefab;
+        }
+
+        static void LoadSkeletonAnimators()
+        {
+            if (skeletonAnimatorLoadAttempted)
+                return;
+
+            skeletonAnimatorLoadAttempted = true;
+            skeletonDeathController = Resources.Load<RuntimeAnimatorController>(SkeletonDeathAnimatorPath);
+            skeletonIdleController = Resources.Load<RuntimeAnimatorController>(SkeletonIdleAnimatorPath);
+
+            if (skeletonDeathController == null)
+                Debug.LogWarning($"Skeleton death animator not found at Resources/{SkeletonDeathAnimatorPath}.");
+        }
+
+        void SetupSkeletonAnimator(GameObject visual)
+        {
+            skeletonAnimator = visual.GetComponentInChildren<Animator>();
+            if (skeletonAnimator == null)
+                return;
+
+            skeletonAnimator.applyRootMotion = false;
+            skeletonWalkController = skeletonAnimator.runtimeAnimatorController;
+            LoadSkeletonAnimators();
+            skeletonAnimator.Play(SkeletonAnimationStateName, 0, 0f);
+        }
+
+        void UpdateSkeletonAnimation(bool isMoving)
+        {
+            if (skeletonAnimator == null || !usesSkeletonVisual || isDead)
+                return;
+
+            bool paused = isKnockedDown || EnemyFreezeController.IsActive || IsStunned;
+            if (paused)
+            {
+                skeletonAnimator.speed = 0f;
+                return;
+            }
+
+            skeletonAnimator.speed = 1f;
+
+            RuntimeAnimatorController desiredController = isMoving
+                ? skeletonWalkController
+                : skeletonIdleController ?? skeletonWalkController;
+
+            if (desiredController == null)
+                return;
+
+            if (skeletonAnimator.runtimeAnimatorController != desiredController)
+            {
+                skeletonAnimator.runtimeAnimatorController = desiredController;
+                skeletonAnimator.Play(SkeletonAnimationStateName, 0, 0f);
+            }
+        }
+
+        void PlaySkeletonDeathAnimation()
+        {
+            if (skeletonAnimator == null || skeletonDeathController == null)
+                return;
+
+            skeletonAnimator.speed = 1f;
+            skeletonAnimator.runtimeAnimatorController = skeletonDeathController;
+            skeletonAnimator.Play(SkeletonAnimationStateName, 0, 0f);
+        }
+
+        static void EnsureUrpMaterials(GameObject visual)
+        {
+            if (urpLitShader == null)
+                urpLitShader = Shader.Find("Universal Render Pipeline/Lit");
+
+            if (urpLitShader == null)
+                return;
+
+            foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
+            {
+                foreach (Material material in renderer.sharedMaterials)
+                {
+                    if (material == null || material.shader == urpLitShader)
+                        continue;
+
+                    Color baseColor = material.HasProperty("_Color") ? material.color : Color.white;
+                    material.shader = urpLitShader;
+                    material.SetColor("_BaseColor", baseColor);
+                }
+            }
+        }
+
         public void Initialize(int health, int damage = EnemyCombatStats.BaseContactDamage, bool elite = false)
         {
             maxHealth = Mathf.Max(1, health);
@@ -139,19 +268,22 @@ namespace KnightRun.Gameplay
 
         void ApplyStandingDimensions()
         {
-            float sizeMultiplier = isElite ? EliteSizeMultiplier : 1f;
+            float visualSizeMultiplier = isElite
+                ? (usesSkeletonVisual ? SkeletonEliteVisualMultiplier : EliteSizeMultiplier)
+                : 1f;
+            float colliderSizeMultiplier = isElite ? EliteSizeMultiplier : 1f;
 
             if (meshTransform != null)
             {
-                meshTransform.localPosition = MeshStandPosition * sizeMultiplier;
-                meshTransform.localScale = MeshStandScale * sizeMultiplier;
+                meshTransform.localPosition = MeshStandPosition * visualSizeMultiplier;
+                meshTransform.localScale = MeshStandScale * visualSizeMultiplier;
                 meshTransform.localRotation = MeshStandRotation;
             }
 
             if (bodyCollider != null)
             {
-                bodyCollider.size = Vector3.one * BodySize * sizeMultiplier;
-                bodyCollider.center = new Vector3(0f, BodySize * 0.5f * sizeMultiplier, 0f);
+                bodyCollider.size = Vector3.one * BodySize * colliderSizeMultiplier;
+                bodyCollider.center = new Vector3(0f, BodySize * 0.5f * colliderSizeMultiplier, 0f);
             }
         }
 
@@ -180,6 +312,7 @@ namespace KnightRun.Gameplay
 
                 UpdateDamagePopupBatch();
                 UpdateFreezeVisual();
+                UpdateSkeletonAnimation(false);
 
                 if (transform.position.z < player.position.z - DespawnBehindDistance)
                     Destroy(gameObject);
@@ -191,6 +324,7 @@ namespace KnightRun.Gameplay
             {
                 UpdateDamagePopupBatch();
                 UpdateFreezeVisual();
+                UpdateSkeletonAnimation(false);
 
                 if (transform.position.z < player.position.z - DespawnBehindDistance)
                     Destroy(gameObject);
@@ -202,6 +336,7 @@ namespace KnightRun.Gameplay
             {
                 UpdateDamagePopupBatch();
                 UpdateFreezeVisual();
+                UpdateSkeletonAnimation(false);
 
                 if (transform.position.z < player.position.z - DespawnBehindDistance)
                     Destroy(gameObject);
@@ -218,7 +353,8 @@ namespace KnightRun.Gameplay
             target.y = transform.position.y;
 
             Vector3 offset = target - transform.position;
-            if (offset.sqrMagnitude > 0.01f)
+            bool isMoving = offset.sqrMagnitude > 0.01f;
+            if (isMoving)
             {
                 Vector3 lookDirection = new Vector3(offset.x, 0f, offset.z);
                 if (lookDirection.sqrMagnitude > 0.001f)
@@ -233,6 +369,8 @@ namespace KnightRun.Gameplay
                 delta.x *= RunForwardMotion.GetEnemyHorizontalMoveScale();
                 transform.position += delta;
             }
+
+            UpdateSkeletonAnimation(isMoving);
 
             if (transform.position.z < player.position.z - DespawnBehindDistance)
                 Destroy(gameObject);
@@ -309,11 +447,13 @@ namespace KnightRun.Gameplay
             isKnockedDown = true;
             knockdownTimer = KnockdownDuration;
 
-            if (meshTransform != null)
+            if (meshTransform != null && !usesSkeletonVisual)
             {
-                float sizeMultiplier = isElite ? EliteSizeMultiplier : 1f;
-                meshTransform.localPosition = MeshKnockedPosition * sizeMultiplier;
-                meshTransform.localScale = MeshKnockedScale * sizeMultiplier;
+                float visualSizeMultiplier = isElite
+                    ? (usesSkeletonVisual ? SkeletonEliteVisualMultiplier : EliteSizeMultiplier)
+                    : 1f;
+                meshTransform.localPosition = MeshKnockedPosition * visualSizeMultiplier;
+                meshTransform.localScale = MeshKnockedScale * visualSizeMultiplier;
                 meshTransform.localRotation = MeshKnockedRotation;
             }
 
@@ -378,10 +518,19 @@ namespace KnightRun.Gameplay
             if (renderer == null)
                 return;
 
-            Material material = renderer.material;
-            material.color = color;
-            if (material.HasProperty("_BaseColor"))
-                material.SetColor("_BaseColor", color);
+            if (color == Color.white)
+            {
+                renderer.SetPropertyBlock(null);
+                return;
+            }
+
+            if (tintPropertyBlock == null)
+                tintPropertyBlock = new MaterialPropertyBlock();
+
+            tintPropertyBlock.Clear();
+            tintPropertyBlock.SetColor("_Color", color);
+            tintPropertyBlock.SetColor("_BaseColor", color);
+            renderer.SetPropertyBlock(tintPropertyBlock);
         }
 
         public void TakeDamage(float damage)
@@ -484,6 +633,10 @@ namespace KnightRun.Gameplay
 
             FlushDamagePopup();
             isDead = true;
+
+            if (bodyCollider != null)
+                bodyCollider.enabled = false;
+
             GameManager.Instance?.AddEnemyDefeated();
             Vector3 dropPosition = transform.position;
             ExperienceOrb.Spawn(
@@ -491,6 +644,14 @@ namespace KnightRun.Gameplay
                 isElite ? ExperienceOrb.EliteValue : ExperienceOrb.DefaultValue);
             if (spawnSpecialLoot)
                 EnemyLootDrop.TrySpawnSpecialDrop(dropPosition);
+
+            if (usesSkeletonVisual && skeletonAnimator != null && skeletonDeathController != null)
+            {
+                PlaySkeletonDeathAnimation();
+                Destroy(gameObject, SkeletonDeathDuration);
+                return;
+            }
+
             Destroy(gameObject);
         }
     }

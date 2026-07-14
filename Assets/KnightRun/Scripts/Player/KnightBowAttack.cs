@@ -92,6 +92,7 @@ namespace KnightRun.Player
         void FireArrow()
         {
             int volleyCount = UpgradeStats.AttackVolleyCount;
+            int pierceExtraHits = UpgradeStats.RollPierceExtraHits();
 
             for (int i = 0; i < volleyCount; i++)
             {
@@ -102,7 +103,8 @@ namespace KnightRun.Player
                 ArrowProjectile.Spawn(
                     spawnPosition,
                     UpgradeStats.BowDamage,
-                    UpgradeStats.AttackAreaMultiplier);
+                    UpgradeStats.AttackAreaMultiplier,
+                    pierceExtraHits);
             }
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using KnightRun.Core;
 using KnightRun.World;
 using UnityEngine;
@@ -25,7 +26,8 @@ namespace KnightRun.Gameplay
         float speed;
         float areaMultiplier;
         float lifetime;
-        bool hasHit;
+        int remainingHits;
+        readonly HashSet<int> hitTargets = new HashSet<int>();
         bool returnNotified;
         Phase phase;
         Action onReturned;
@@ -37,7 +39,8 @@ namespace KnightRun.Gameplay
             float damage,
             float speed,
             float areaMultiplier,
-            Action onReturned)
+            Action onReturned,
+            int pierceExtraHits = 0)
         {
             areaMultiplier = Mathf.Max(1f, areaMultiplier);
 
@@ -57,6 +60,7 @@ namespace KnightRun.Gameplay
             projectile.areaMultiplier = areaMultiplier;
             projectile.onReturned = onReturned;
             projectile.phase = Phase.Outbound;
+            projectile.remainingHits = 1 + Mathf.Max(0, pierceExtraHits);
             return projectile;
         }
 
@@ -110,6 +114,7 @@ namespace KnightRun.Gameplay
 
             MoveToward(returnPosition);
             transform.Rotate(Vector3.up, 900f * Time.deltaTime, Space.Self);
+            TryHit();
 
             if ((transform.position - returnPosition).sqrMagnitude <= ReturnArrivalDistance * ReturnArrivalDistance)
                 CompleteReturn();
@@ -142,7 +147,7 @@ namespace KnightRun.Gameplay
 
         void TryHit()
         {
-            if (hasHit)
+            if (remainingHits <= 0)
                 return;
 
             float hitRadius = BaseHitRadius * areaMultiplier;
@@ -161,10 +166,11 @@ namespace KnightRun.Gameplay
                 if (hit.CompareTag("Player"))
                     continue;
 
-                if (CombatTarget.TryApplyDamage(hit, damage))
+                if (CombatTarget.TryApplyDamage(hit, damage, hitTargets))
                 {
-                    hasHit = true;
-                    return;
+                    remainingHits--;
+                    if (remainingHits <= 0)
+                        return;
                 }
             }
         }
