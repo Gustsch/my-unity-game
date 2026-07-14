@@ -9,18 +9,19 @@ namespace KnightRun.Gameplay
     {
         enum Behavior
         {
-            Align,
-            Hover,
-            Dive
+            Approach,
+            Dive,
+            Depart
         }
 
         const float FlyHeight = 3.2f;
-        const float AlignSpeed = 15f;
-        const float AlignTolerance = 0.2f;
-        const float EngageDistance = 12f;
-        const float HoverDuration = 0.25f;
-        const float DiveSpeed = 32f;
+        const float ApproachSpeed = 5f;
+        const float ApproachAlignSpeed = 4f;
+        const float AttackDistanceRatio = 0.5f;
+        const float AttackAimForwardDistance = 6f;
+        const float DiveSpeed = 24f;
         const float DiveArrivalDistance = 0.55f;
+        const float DepartSpeed = 18f;
         const float BodySize = 0.7f;
         const float DespawnBehindDistance = 14f;
         const float WingFlapSpeed = 14f;
@@ -34,16 +35,16 @@ namespace KnightRun.Gameplay
         Transform leftWing;
         Transform rightWing;
         GameManager gameManager;
-        Behavior behavior = Behavior.Align;
+        Behavior behavior = Behavior.Approach;
         bool isDead;
+        bool approachInitialized;
         int maxHealth;
         float currentHealth;
         int contactDamage;
-        float hoverTimer;
+        float attackStartDistance;
         float contactCooldownTimer;
         float pendingPopupDamage;
         float popupBatchTimer;
-        float diveLockX;
         Vector3 diveTarget;
 
         public int MaxHealth => maxHealth;
@@ -117,8 +118,8 @@ namespace KnightRun.Gameplay
             currentHealth = maxHealth;
             contactDamage = Mathf.Max(1, damage);
             gameObject.name = $"Bat_HP{maxHealth}";
-            behavior = Behavior.Align;
-            hoverTimer = 0f;
+            behavior = Behavior.Approach;
+            approachInitialized = false;
         }
 
         void Start()
@@ -146,14 +147,14 @@ namespace KnightRun.Gameplay
 
             switch (behavior)
             {
-                case Behavior.Align:
-                    UpdateAlign();
-                    break;
-                case Behavior.Hover:
-                    UpdateHover();
+                case Behavior.Approach:
+                    UpdateApproach();
                     break;
                 case Behavior.Dive:
                     UpdateDive();
+                    break;
+                case Behavior.Depart:
+                    UpdateDepart();
                     break;
             }
 
@@ -161,46 +162,36 @@ namespace KnightRun.Gameplay
                 Destroy(gameObject);
         }
 
-        void UpdateAlign()
+        void UpdateApproach()
         {
             Vector3 position = transform.position;
+
+            if (!approachInitialized)
+            {
+                attackStartDistance = Mathf.Max(1f, position.z - player.position.z);
+                approachInitialized = true;
+            }
+
             position.y = FlyHeight;
-            position.x = Mathf.MoveTowards(position.x, player.position.x, AlignSpeed * Time.deltaTime);
+            position.x = Mathf.MoveTowards(
+                position.x,
+                player.position.x,
+                ApproachAlignSpeed * Time.deltaTime);
+            position.z -= ApproachSpeed * Time.deltaTime;
             transform.position = position;
 
             float aheadDistance = position.z - player.position.z;
-            bool aligned = Mathf.Abs(position.x - player.position.x) <= AlignTolerance;
-            bool closeEnough = aheadDistance <= EngageDistance && aheadDistance >= -1f;
-
-            if (aligned && closeEnough)
-            {
-                diveLockX = player.position.x;
-                behavior = Behavior.Hover;
-                hoverTimer = HoverDuration;
-            }
-        }
-
-        void UpdateHover()
-        {
-            Vector3 position = transform.position;
-            position.x = Mathf.MoveTowards(position.x, diveLockX, AlignSpeed * Time.deltaTime);
-            position.y = FlyHeight;
-            transform.position = position;
-
-            hoverTimer -= Time.deltaTime;
-            if (hoverTimer > 0f)
+            if (aheadDistance > attackStartDistance * AttackDistanceRatio)
                 return;
 
-            diveTarget = player.position + Vector3.up * 0.6f;
-            diveTarget.x = diveLockX;
+            // A mira e fixada aqui. Durante o mergulho o morcego nao corrige
+            // nem o eixo lateral nem a profundidade do ataque.
+            diveTarget = player.position + new Vector3(0f, 0.55f, AttackAimForwardDistance);
             behavior = Behavior.Dive;
         }
 
         void UpdateDive()
         {
-            diveTarget = player.position + Vector3.up * 0.55f;
-            diveTarget.x = diveLockX;
-
             Vector3 next = Vector3.MoveTowards(transform.position, diveTarget, DiveSpeed * Time.deltaTime);
             transform.position = next;
 
@@ -210,13 +201,19 @@ namespace KnightRun.Gameplay
 
             if ((transform.position - diveTarget).sqrMagnitude <= DiveArrivalDistance * DiveArrivalDistance)
             {
-                // remonta para tentar de novo se ainda estiver vivo
-                behavior = Behavior.Align;
-                transform.rotation = Quaternion.identity;
-                Vector3 reset = transform.position;
-                reset.y = FlyHeight;
-                transform.position = reset;
+                behavior = Behavior.Depart;
             }
+        }
+
+        void UpdateDepart()
+        {
+            Vector3 position = transform.position;
+            position.z -= DepartSpeed * Time.deltaTime;
+            position.y = Mathf.MoveTowards(position.y, FlyHeight, DepartSpeed * 0.35f * Time.deltaTime);
+            transform.position = position;
+
+            Vector3 look = new Vector3(0f, FlyHeight - position.y, -1f);
+            transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
         }
 
         void AnimateWings()

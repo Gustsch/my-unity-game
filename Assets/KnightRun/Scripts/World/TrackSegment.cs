@@ -14,6 +14,15 @@ namespace KnightRun.World
         Transform ground;
         Transform decorRoot;
         RunPhaseSettings currentSettings;
+        bool phaseTransitionActive;
+        bool transitionMaterialsSwapped;
+        float phaseTransitionElapsed;
+        float phaseTransitionDuration;
+        Vector3 transitionGroundScale;
+        Vector3 transitionLeftWallPosition;
+        Vector3 transitionRightWallPosition;
+        Material transitionGroundMaterial;
+        Material transitionWallMaterial;
 
         public void Build(RunPhaseSettings settings, float zPosition)
         {
@@ -34,9 +43,6 @@ namespace KnightRun.World
 
             switch (settings.phase)
             {
-                case RunPhase.Forest:
-                    BuildForestDecor();
-                    break;
                 case RunPhase.Cave:
                     BuildCaveDecor();
                     break;
@@ -47,25 +53,6 @@ namespace KnightRun.World
                     BuildVolcanoDecor();
                     break;
             }
-        }
-
-        void BuildForestDecor()
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                float z = 2f + i * 3.2f;
-                CreateTree(decorRoot, new Vector3(-5.5f, 0f, z));
-                CreateTree(decorRoot, new Vector3(5.5f, 0f, z + 1.5f));
-            }
-        }
-
-        void CreateTree(Transform parent, Vector3 localPos)
-        {
-            var trunk = CreateBox("TreeTrunk", new Vector3(0.35f, 1.2f, 0.35f), localPos + new Vector3(0f, 0.6f, 0f),
-                KnightRunMaterials.Get(KnightRunTexture.TreeTrunk), parent);
-            CreateBox("TreeTop", new Vector3(1.2f, 1.4f, 1.2f), localPos + new Vector3(0f, 1.8f, 0f),
-                KnightRunMaterials.Get(KnightRunTexture.TreeLeaves), parent);
-            Object.Destroy(trunk.GetComponent<Collider>());
         }
 
         void BuildCaveDecor()
@@ -168,6 +155,123 @@ namespace KnightRun.World
             SetMaterial(ground, groundMat);
             SetMaterial(leftWall, wallMat);
             SetMaterial(rightWall, wallMat);
+        }
+
+        public void BeginPhaseTransition(RunPhaseSettings settings, float duration)
+        {
+            currentSettings = settings;
+            Phase = settings.phase;
+            phaseTransitionDuration = Mathf.Max(0.1f, duration);
+            phaseTransitionElapsed = 0f;
+            phaseTransitionActive = true;
+            transitionMaterialsSwapped = false;
+
+            transitionGroundScale = ground != null
+                ? ground.localScale
+                : new Vector3(PhaseTrackLayout.GetGroundWidth(settings), 0.4f, Length);
+            transitionLeftWallPosition = leftWall != null
+                ? leftWall.localPosition
+                : Vector3.zero;
+            transitionRightWallPosition = rightWall != null
+                ? rightWall.localPosition
+                : Vector3.zero;
+
+            transitionGroundMaterial = KnightRunMaterials.GetForPhase(
+                settings.phase,
+                PhaseSurface.Ground,
+                new Vector2(2f, 4f));
+            transitionWallMaterial = KnightRunMaterials.GetForPhase(
+                settings.phase,
+                PhaseSurface.Wall,
+                new Vector2(1f, 4f));
+        }
+
+        void Update()
+        {
+            if (!phaseTransitionActive)
+                return;
+
+            phaseTransitionElapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(phaseTransitionElapsed / phaseTransitionDuration);
+            float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
+
+            ApplyTransitionLayout(smoothProgress);
+            ApplyTransitionTheme(progress);
+
+            if (progress < 1f)
+                return;
+
+            phaseTransitionActive = false;
+            ApplyLayout(currentSettings);
+            SetMaterial(ground, transitionGroundMaterial);
+            SetMaterial(leftWall, transitionWallMaterial);
+            SetMaterial(rightWall, transitionWallMaterial);
+        }
+
+        void ApplyTransitionLayout(float progress)
+        {
+            float targetGroundWidth = PhaseTrackLayout.GetGroundWidth(currentSettings);
+            float targetLeftX = PhaseTrackLayout.GetWallCenterX(currentSettings, -1);
+            float targetRightX = PhaseTrackLayout.GetWallCenterX(currentSettings, 1);
+
+            if (ground != null)
+            {
+                ground.localScale = Vector3.Lerp(
+                    transitionGroundScale,
+                    new Vector3(targetGroundWidth, 0.4f, Length),
+                    progress);
+            }
+
+            if (leftWall != null)
+            {
+                leftWall.localPosition = Vector3.Lerp(
+                    transitionLeftWallPosition,
+                    new Vector3(targetLeftX, 1.5f, Length * 0.5f),
+                    progress);
+            }
+
+            if (rightWall != null)
+            {
+                rightWall.localPosition = Vector3.Lerp(
+                    transitionRightWallPosition,
+                    new Vector3(targetRightX, 1.5f, Length * 0.5f),
+                    progress);
+            }
+        }
+
+        void ApplyTransitionTheme(float progress)
+        {
+            if (!transitionMaterialsSwapped && progress >= 0.5f)
+            {
+                transitionMaterialsSwapped = true;
+                SetMaterial(ground, transitionGroundMaterial);
+                SetMaterial(leftWall, transitionWallMaterial);
+                SetMaterial(rightWall, transitionWallMaterial);
+            }
+
+            float brightness = progress < 0.5f
+                ? Mathf.Lerp(1f, 0.35f, progress * 2f)
+                : Mathf.Lerp(0.35f, 1f, (progress - 0.5f) * 2f);
+
+            SetBrightness(ground, brightness);
+            SetBrightness(leftWall, brightness);
+            SetBrightness(rightWall, brightness);
+        }
+
+        static void SetBrightness(Transform target, float brightness)
+        {
+            if (target == null)
+                return;
+
+            Renderer renderer = target.GetComponent<Renderer>();
+            if (renderer == null)
+                return;
+
+            Color color = Color.white * brightness;
+            color.a = 1f;
+            renderer.material.color = color;
+            if (renderer.material.HasProperty("_BaseColor"))
+                renderer.material.SetColor("_BaseColor", color);
         }
 
         public void ApplyLayout(RunPhaseSettings settings)

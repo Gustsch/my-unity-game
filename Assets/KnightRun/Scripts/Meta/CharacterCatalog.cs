@@ -108,9 +108,10 @@ namespace KnightRun.Meta
 
             int phaseIndex = character.UnlockAfterBossPhaseIndex;
             if (phaseIndex < 0 || phaseIndex >= RunPhaseDefaults.All.Length)
-                return "Derrote o boss de uma fase anterior";
+                return Localization.T("ui.unlock_previous");
 
-            return $"Derrote o boss de {RunPhaseDefaults.All[phaseIndex].displayName}";
+            string phaseName = Localization.GetPhaseName(RunPhaseDefaults.All[phaseIndex].phase);
+            return Localization.Format("ui.unlock_phase", phaseName);
         }
     }
 }

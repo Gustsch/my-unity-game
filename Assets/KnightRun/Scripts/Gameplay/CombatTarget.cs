@@ -1,4 +1,5 @@
 using UnityEngine;
+using KnightRun.Player;
 
 namespace KnightRun.Gameplay
 {
@@ -52,11 +53,13 @@ namespace KnightRun.Gameplay
         {
             Transform nearest = null;
             float bestDistance = float.MaxValue;
+            RunnerController runner = Object.FindFirstObjectByType<RunnerController>();
+            float playerZ = runner != null ? runner.transform.position.z : origin.z;
 
             Enemy[] enemies = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
             foreach (Enemy enemy in enemies)
             {
-                if (enemy == null)
+                if (enemy == null || enemy.transform.position.z <= playerZ)
                     continue;
 
                 float distance = (enemy.transform.position - origin).sqrMagnitude;
@@ -70,7 +73,7 @@ namespace KnightRun.Gameplay
             BatEnemy[] bats = Object.FindObjectsByType<BatEnemy>(FindObjectsSortMode.None);
             foreach (BatEnemy bat in bats)
             {
-                if (bat == null)
+                if (bat == null || bat.transform.position.z <= playerZ)
                     continue;
 
                 float distance = (bat.transform.position - origin).sqrMagnitude;
@@ -84,7 +87,7 @@ namespace KnightRun.Gameplay
             Boss[] bosses = Object.FindObjectsByType<Boss>(FindObjectsSortMode.None);
             foreach (Boss boss in bosses)
             {
-                if (boss == null)
+                if (boss == null || boss.transform.position.z <= playerZ)
                     continue;
 
                 float distance = (boss.transform.position - origin).sqrMagnitude;

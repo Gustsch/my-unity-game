@@ -17,6 +17,8 @@ namespace KnightRun.Player
         public int CurrentLane { get; private set; } = PhaseTrackLayout.GetCenterLaneIndex();
         public bool IsSliding { get; private set; }
         public bool IsGrounded { get; private set; } = true;
+        public bool IsRooted => rootTimer > 0f;
+        public bool IsChilled => chillTimer > 0f;
         public bool IsSlideInvulnerable =>
             IsSliding && GetSlidePhase() >= SlideImmunityStart && GetSlidePhase() <= SlideImmunityEnd;
 
@@ -33,9 +35,12 @@ namespace KnightRun.Player
         float iceHorizontalVelocity;
         float slideTimer;
         float fallRestartCooldown;
+        float rootTimer;
+        float chillTimer;
+        float chillMoveMultiplier = 1f;
 
         const float LaneSwitchSpeed = 10000f;
-        const float BaseFreeMoveSpeed = 300;
+        const float BaseFreeMoveSpeed = 220;
         const float JumpForce = 10f;
         const float Gravity = -32f;
         const float BaseSlideDuration = 0.55f;
@@ -44,9 +49,10 @@ namespace KnightRun.Player
         const float NormalHeight = 2f;
         const float SlideHeight = 1f;
         const float FallRestartY = -4f;
-        const float IceAcceleration = 55f;
-        const float IceStartAcceleration = 28f;
-        const float IceDeceleration = 90f;
+        const float IceMaxHorizontalSpeed = 14f;
+        const float IceAcceleration = 180f;
+        const float IceStartAcceleration = 240f;
+        const float IceDeceleration = 320f;
         const float IceStopThreshold = 0.15f;
 
         float FreeMoveSpeed
@@ -54,9 +60,12 @@ namespace KnightRun.Player
             get
             {
                 float multiplier = upgradeStats != null ? upgradeStats.MoveSpeedMultiplier : 1f;
-                return BaseFreeMoveSpeed * multiplier * MetaBonuses.MoveSpeedMultiplier;
+                float chill = IsChilled ? chillMoveMultiplier : 1f;
+                return BaseFreeMoveSpeed * multiplier * MetaBonuses.MoveSpeedMultiplier * chill;
             }
         }
+
+        float ChillAccelerationMultiplier => IsChilled ? chillMoveMultiplier : 1f;
 
         float SlideDuration
         {
@@ -107,10 +116,59 @@ namespace KnightRun.Player
             if (gameManager == null || gameManager.State != GameState.Running)
                 return;
 
+            if (rootTimer > 0f)
+                rootTimer -= Time.deltaTime;
+
+            if (chillTimer > 0f)
+            {
+                chillTimer -= Time.deltaTime;
+                if (chillTimer <= 0f)
+                    chillMoveMultiplier = 1f;
+            }
+
             HandleInput();
             UpdateSlide();
             Move();
             CheckFall();
+        }
+
+        public void ApplyRoot(float duration)
+        {
+            if (duration <= 0f)
+                return;
+
+            rootTimer = Mathf.Max(rootTimer, duration);
+            horizontalInput = 0f;
+            iceHorizontalVelocity = 0f;
+
+            if (IsSliding)
+                EndSlide();
+        }
+
+        public void ClearRoot()
+        {
+            rootTimer = 0f;
+        }
+
+        public void ApplyChill(float duration, float moveMultiplier)
+        {
+            if (duration <= 0f)
+                return;
+
+            chillTimer = Mathf.Max(chillTimer, duration);
+            chillMoveMultiplier = Mathf.Clamp(moveMultiplier, 0.05f, 1f);
+        }
+
+        public void ClearChill()
+        {
+            chillTimer = 0f;
+            chillMoveMultiplier = 1f;
+        }
+
+        public void ClearStatusEffects()
+        {
+            ClearRoot();
+            ClearChill();
         }
 
         void HandlePhaseChanged(RunPhase phase, RunPhaseSettings settings)
@@ -141,6 +199,12 @@ namespace KnightRun.Player
 
         void HandleInput()
         {
+            if (IsRooted)
+            {
+                horizontalInput = 0f;
+                return;
+            }
+
             if (UsesLaneMovement)
             {
                 horizontalInput = 0f;
@@ -274,7 +338,12 @@ namespace KnightRun.Player
             Vector3 position = transform.position;
             bool grounded = controller.isGrounded;
 
-            if (UsesLaneMovement)
+            if (IsRooted)
+            {
+                horizontalInput = 0f;
+                iceHorizontalVelocity = 0f;
+            }
+            else if (UsesLaneMovement)
                 position.x = Mathf.MoveTowards(position.x, targetLaneX, LaneSwitchSpeed * Time.deltaTime);
             else if (UsesSlideMovement)
             {
@@ -313,7 +382,13 @@ namespace KnightRun.Player
 
         float ApplyIceMovement(float currentX)
         {
-            float targetVelocity = horizontalInput * FreeMoveSpeed;
+            float speedMultiplier = upgradeStats != null ? upgradeStats.MoveSpeedMultiplier : 1f;
+            float chilledMultiplier = IsChilled ? chillMoveMultiplier : 1f;
+            float targetVelocity = horizontalInput
+                * IceMaxHorizontalSpeed
+                * speedMultiplier
+                * MetaBonuses.MoveSpeedMultiplier
+                * chilledMultiplier;
             bool hasInput = Mathf.Abs(horizontalInput) > 0.01f;
 
             if (hasInput)
@@ -323,9 +398,9 @@ namespace KnightRun.Player
                     Mathf.Abs(iceHorizontalVelocity) > IceStopThreshold &&
                     Mathf.Sign(horizontalInput) != Mathf.Sign(iceHorizontalVelocity);
 
-                float acceleration = startingFromRest || reversing
+                float acceleration = (startingFromRest || reversing
                     ? IceStartAcceleration
-                    : IceAcceleration;
+                    : IceAcceleration) * ChillAccelerationMultiplier;
 
                 iceHorizontalVelocity = Mathf.MoveTowards(
                     iceHorizontalVelocity,
@@ -337,7 +412,7 @@ namespace KnightRun.Player
                 iceHorizontalVelocity = Mathf.MoveTowards(
                     iceHorizontalVelocity,
                     0f,
-                    IceDeceleration * Time.deltaTime);
+                    IceDeceleration * ChillAccelerationMultiplier * Time.deltaTime);
             }
 
             float nextX = currentX + iceHorizontalVelocity * Time.deltaTime;
@@ -372,6 +447,9 @@ namespace KnightRun.Player
             iceHorizontalVelocity = 0f;
             verticalVelocity = 0f;
             IsGrounded = true;
+            rootTimer = 0f;
+            chillTimer = 0f;
+            chillMoveMultiplier = 1f;
             fallRestartCooldown = 0.5f;
             EndSlide();
             GetComponent<KnightHealth>()?.ResetHealth();

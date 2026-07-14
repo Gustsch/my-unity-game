@@ -15,12 +15,14 @@ namespace KnightRun.Gameplay
             target = null;
             Camera camera = Camera.main;
             var candidates = new List<Transform>();
+            RunnerController runner = Object.FindFirstObjectByType<RunnerController>();
+            float playerZ = runner != null ? runner.transform.position.z : float.NegativeInfinity;
 
             Enemy[] enemies = Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None);
             for (int i = 0; i < enemies.Length; i++)
             {
                 Enemy enemy = enemies[i];
-                if (enemy == null)
+                if (enemy == null || enemy.transform.position.z <= playerZ)
                     continue;
 
                 if (IsOnScreen(enemy.transform.position, camera))
@@ -31,7 +33,7 @@ namespace KnightRun.Gameplay
             for (int i = 0; i < bats.Length; i++)
             {
                 BatEnemy bat = bats[i];
-                if (bat == null)
+                if (bat == null || bat.transform.position.z <= playerZ)
                     continue;
 
                 if (IsOnScreen(bat.transform.position, camera))
@@ -42,7 +44,7 @@ namespace KnightRun.Gameplay
             for (int i = 0; i < bosses.Length; i++)
             {
                 Boss boss = bosses[i];
-                if (boss == null)
+                if (boss == null || boss.transform.position.z <= playerZ)
                     continue;
 
                 if (IsOnScreen(boss.transform.position, camera))

@@ -9,6 +9,10 @@ namespace KnightRun.Gameplay
     {
         Transform player;
         Transform meshTransform;
+        Transform leftArm;
+        Transform rightArm;
+        Transform leftLeg;
+        Transform rightLeg;
         BoxCollider bodyCollider;
         GameManager gameManager;
         bool isDead;
@@ -19,6 +23,8 @@ namespace KnightRun.Gameplay
         int contactDamage;
         bool isElite;
         bool isFrozenTintApplied;
+        bool isSkeleton;
+        float runAnimationOffset;
         float pendingPopupDamage;
         float popupBatchTimer;
         float contactCooldownTimer;
@@ -33,6 +39,7 @@ namespace KnightRun.Gameplay
 
         static readonly Color EliteTint = new Color(0.28f, 0.28f, 0.32f);
         static readonly Color FrozenTint = new Color(0.55f, 0.82f, 1f);
+        static readonly Color SkeletonBoneTint = new Color(0.86f, 0.84f, 0.7f);
         const float BodySize = 1f;
         const float MoveSpeed = 5f;
         const float DespawnBehindDistance = 10f;
@@ -53,22 +60,99 @@ namespace KnightRun.Gameplay
         static readonly Vector3 MeshKnockedScale = new Vector3(BodySize, BodySize * 0.35f, BodySize);
         static readonly Quaternion MeshKnockedRotation = Quaternion.Euler(0f, 0f, 90f);
 
-        public void Build()
+        public void Build(RunPhase phase)
         {
             gameObject.name = "Enemy";
+            isSkeleton = phase == RunPhase.Forest;
+            runAnimationOffset = Random.Range(0f, Mathf.PI * 2f);
 
-            var mesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            mesh.transform.SetParent(transform, false);
-            mesh.transform.localScale = MeshStandScale;
-            mesh.transform.localPosition = MeshStandPosition;
-            mesh.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Enemy);
-            Destroy(mesh.GetComponent<Collider>());
-            meshTransform = mesh.transform;
+            meshTransform = new GameObject(isSkeleton ? "SkeletonVisual" : "EnemyVisual").transform;
+            meshTransform.SetParent(transform, false);
+            meshTransform.localScale = MeshStandScale;
+            meshTransform.localPosition = MeshStandPosition;
+
+            if (isSkeleton)
+                BuildSkeleton(meshTransform);
+            else
+                BuildDefaultVisual(meshTransform);
 
             bodyCollider = gameObject.AddComponent<BoxCollider>();
             bodyCollider.isTrigger = true;
-            bodyCollider.size = Vector3.one * BodySize;
-            bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
+            bodyCollider.size = isSkeleton
+                ? new Vector3(0.85f, 1.35f, 0.65f)
+                : Vector3.one * BodySize;
+            bodyCollider.center = isSkeleton
+                ? new Vector3(0f, 0.68f, 0f)
+                : new Vector3(0f, BodySize * 0.5f, 0f);
+        }
+
+        void BuildDefaultVisual(Transform root)
+        {
+            var mesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            mesh.name = "Body";
+            mesh.transform.SetParent(root, false);
+            mesh.transform.localScale = Vector3.one;
+            mesh.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Enemy);
+            Destroy(mesh.GetComponent<Collider>());
+        }
+
+        void BuildSkeleton(Transform root)
+        {
+            CreateSkeletonPart("Pelvis", PrimitiveType.Cube, root,
+                new Vector3(0f, -0.03f, 0f), new Vector3(0.38f, 0.18f, 0.2f));
+            CreateSkeletonPart("Spine", PrimitiveType.Capsule, root,
+                new Vector3(0f, 0.28f, 0f), new Vector3(0.1f, 0.25f, 0.1f));
+
+            for (int i = 0; i < 3; i++)
+            {
+                CreateSkeletonPart($"Rib_{i}", PrimitiveType.Cube, root,
+                    new Vector3(0f, 0.2f + i * 0.14f, 0f),
+                    new Vector3(0.52f - i * 0.06f, 0.07f, 0.16f));
+            }
+
+            CreateSkeletonPart("Skull", PrimitiveType.Sphere, root,
+                new Vector3(0f, 0.76f, 0f), new Vector3(0.34f, 0.38f, 0.32f));
+            CreateSkeletonPart("Jaw", PrimitiveType.Cube, root,
+                new Vector3(0f, 0.59f, -0.02f), new Vector3(0.25f, 0.1f, 0.22f));
+
+            leftArm = CreateLimb("LeftArm", root, new Vector3(-0.32f, 0.48f, 0f), 0.55f, 0.09f);
+            rightArm = CreateLimb("RightArm", root, new Vector3(0.32f, 0.48f, 0f), 0.55f, 0.09f);
+            leftLeg = CreateLimb("LeftLeg", root, new Vector3(-0.14f, -0.1f, 0f), 0.58f, 0.11f);
+            rightLeg = CreateLimb("RightLeg", root, new Vector3(0.14f, -0.1f, 0f), 0.58f, 0.11f);
+        }
+
+        Transform CreateLimb(string name, Transform root, Vector3 pivotPosition, float length, float thickness)
+        {
+            Transform pivot = new GameObject(name).transform;
+            pivot.SetParent(root, false);
+            pivot.localPosition = pivotPosition;
+
+            Transform bone = CreateSkeletonPart(
+                $"{name}Bone",
+                PrimitiveType.Capsule,
+                pivot,
+                new Vector3(0f, -length * 0.5f, 0f),
+                new Vector3(thickness, length * 0.5f, thickness));
+            bone.localRotation = Quaternion.identity;
+            return pivot;
+        }
+
+        Transform CreateSkeletonPart(
+            string name,
+            PrimitiveType primitive,
+            Transform parent,
+            Vector3 localPosition,
+            Vector3 localScale)
+        {
+            var part = GameObject.CreatePrimitive(primitive);
+            part.name = name;
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = localPosition;
+            part.transform.localScale = localScale;
+            part.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Stalactite);
+            ApplyRendererTint(part.GetComponent<Renderer>(), SkeletonBoneTint);
+            Destroy(part.GetComponent<Collider>());
+            return part.transform;
         }
 
         public void Initialize(int health, int damage = EnemyCombatStats.BaseContactDamage, bool elite = false)
@@ -85,15 +169,7 @@ namespace KnightRun.Gameplay
 
         void ApplyEliteVisual()
         {
-            var renderer = meshTransform.GetComponent<Renderer>();
-            if (renderer == null)
-                return;
-
-            Material material = renderer.material;
-            material.color = EliteTint;
-
-            if (material.HasProperty("_BaseColor"))
-                material.SetColor("_BaseColor", EliteTint);
+            ApplyTint(EliteTint);
         }
 
         void Start()
@@ -151,6 +227,7 @@ namespace KnightRun.Gameplay
             }
 
             UpdateFreezeVisual();
+            AnimateRun();
 
             if (contactCooldownTimer > 0f)
                 contactCooldownTimer -= Time.deltaTime;
@@ -161,6 +238,15 @@ namespace KnightRun.Gameplay
             Vector3 offset = target - transform.position;
             if (offset.sqrMagnitude > 0.01f)
             {
+                Vector3 lookDirection = new Vector3(offset.x, 0f, offset.z);
+                if (lookDirection.sqrMagnitude > 0.001f)
+                {
+                    transform.rotation = Quaternion.Slerp(
+                        transform.rotation,
+                        Quaternion.LookRotation(lookDirection.normalized, Vector3.up),
+                        10f * Time.deltaTime);
+                }
+
                 Vector3 delta = offset.normalized * MoveSpeed * Time.deltaTime;
                 delta.x *= RunForwardMotion.GetEnemyHorizontalMoveScale();
                 transform.position += delta;
@@ -269,8 +355,12 @@ namespace KnightRun.Gameplay
 
             if (bodyCollider != null)
             {
-                bodyCollider.size = Vector3.one * BodySize;
-                bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
+                bodyCollider.size = isSkeleton
+                    ? new Vector3(0.85f, 1.35f, 0.65f)
+                    : Vector3.one * BodySize;
+                bodyCollider.center = isSkeleton
+                    ? new Vector3(0f, 0.68f, 0f)
+                    : new Vector3(0f, BodySize * 0.5f, 0f);
             }
 
             isFrozenTintApplied = false;
@@ -301,20 +391,44 @@ namespace KnightRun.Gameplay
             if (isElite)
                 ApplyEliteVisual();
             else
-                ApplyTint(Color.white);
+                ApplyTint(isSkeleton ? SkeletonBoneTint : Color.white);
         }
 
         void ApplyTint(Color color)
         {
-            var renderer = meshTransform.GetComponent<Renderer>();
+            if (meshTransform == null)
+                return;
+
+            Renderer[] renderers = meshTransform.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer renderer in renderers)
+                ApplyRendererTint(renderer, color);
+        }
+
+        static void ApplyRendererTint(Renderer renderer, Color color)
+        {
             if (renderer == null)
                 return;
 
             Material material = renderer.material;
             material.color = color;
-
             if (material.HasProperty("_BaseColor"))
                 material.SetColor("_BaseColor", color);
+        }
+
+        void AnimateRun()
+        {
+            if (!isSkeleton || leftArm == null || rightArm == null || leftLeg == null || rightLeg == null)
+                return;
+
+            float swing = Mathf.Sin(Time.time * 11f + runAnimationOffset) * 42f;
+            leftArm.localRotation = Quaternion.Euler(swing, 0f, 0f);
+            rightArm.localRotation = Quaternion.Euler(-swing, 0f, 0f);
+            leftLeg.localRotation = Quaternion.Euler(-swing, 0f, 0f);
+            rightLeg.localRotation = Quaternion.Euler(swing, 0f, 0f);
+
+            Vector3 position = MeshStandPosition;
+            position.y += Mathf.Abs(Mathf.Sin(Time.time * 11f + runAnimationOffset)) * 0.06f;
+            meshTransform.localPosition = position;
         }
 
         public void TakeDamage(float damage)

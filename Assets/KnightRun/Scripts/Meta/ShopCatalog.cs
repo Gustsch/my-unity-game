@@ -20,46 +20,36 @@ namespace KnightRun.Meta
         {
             int level = GetLevel(id);
             return id switch
+            // {
+            //     ShopUpgradeId.MaxHealth => 0,
+            //     ShopUpgradeId.MoveSpeed => 0,
+            //     ShopUpgradeId.AttackSpeed => 0,
+            //     ShopUpgradeId.Ressurection => 0,
+            //     ShopUpgradeId.BaseDamage => 0,
+            //     ShopUpgradeId.Healing => 0,
+            //     ShopUpgradeId.MultiStrike => 0,
+            //     _ => 50
+            // };
             {
                 ShopUpgradeId.MaxHealth => 100 + level * 127,
                 ShopUpgradeId.MoveSpeed => 135 + level * 120,
                 ShopUpgradeId.AttackSpeed => 138 + level * 122,
-                ShopUpgradeId.Ressurection => 300 + level * 153,
+                ShopUpgradeId.Ressurection => 312 + level * 553,
                 ShopUpgradeId.BaseDamage => 120 + level * 112,
                 ShopUpgradeId.Healing => 130 + level * 126,
-                ShopUpgradeId.MultiStrike => 255 + level * 130,
+                ShopUpgradeId.MultiStrike => 255 + level * 137,
                 _ => 50
             };
         }
 
         public static string GetName(ShopUpgradeId id)
         {
-            return id switch
-            {
-                ShopUpgradeId.MaxHealth => "Vida Extra",
-                ShopUpgradeId.MoveSpeed => "Passo Veloz",
-                ShopUpgradeId.AttackSpeed => "Golpes Rapidos",
-                ShopUpgradeId.Ressurection => "Revivida",
-                ShopUpgradeId.BaseDamage => "Dano Base",
-                ShopUpgradeId.Healing => "Cura",
-                ShopUpgradeId.MultiStrike => "Golpes Multiplos",
-                _ => id.ToString()
-            };
+            return Localization.GetShopName(id);
         }
 
         public static string GetDescription(ShopUpgradeId id, int nextLevel)
         {
-            return id switch
-            {
-                ShopUpgradeId.MaxHealth => $"+150 HP maximo (Nv {nextLevel})",
-                ShopUpgradeId.MoveSpeed => $"+4% velocidade de movimento (Nv {nextLevel})",
-                ShopUpgradeId.AttackSpeed => $"+4% velocidade de ataque (Nv {nextLevel})",
-                ShopUpgradeId.Ressurection => $"+1 Ressurreicao por Level (Nv {nextLevel})",
-                ShopUpgradeId.BaseDamage => $"+10% de Dano Base por Level (Nv {nextLevel})",
-                ShopUpgradeId.Healing => $"+10 de Cura a cada 10 inimigos mortos (Nv {nextLevel})",
-                ShopUpgradeId.MultiStrike => $"+1 ataque simultaneo (Nv {nextLevel})",
-                _ => string.Empty
-            };
+            return Localization.GetShopDescription(id, nextLevel);
         }
 
         public static void IncrementLevel(ShopUpgradeId id)

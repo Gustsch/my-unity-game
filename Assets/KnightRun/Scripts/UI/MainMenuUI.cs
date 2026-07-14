@@ -30,6 +30,7 @@ namespace KnightRun.UI
         Transform charactersItemsRoot;
         Button shopBackButton;
         Button charactersBackButton;
+        Button optionsLanguageButton;
         Button optionsResetButton;
         bool resetSaveConfirmationPending;
 
@@ -57,8 +58,10 @@ namespace KnightRun.UI
                 metaProgression.OnMetaChanged += RefreshMetaDisplay;
 
             CharacterSelection.OnCharacterChanged += RefreshCharacterDisplay;
+            Localization.OnLanguageChanged += HandleLanguageChanged;
 
             ShowMainPanel();
+            HandleLanguageChanged();
             RefreshMetaDisplay();
             RefreshCharacterDisplay();
             RefreshShopDisplay();
@@ -99,6 +102,7 @@ namespace KnightRun.UI
                 metaProgression.OnMetaChanged -= RefreshMetaDisplay;
 
             CharacterSelection.OnCharacterChanged -= RefreshCharacterDisplay;
+            Localization.OnLanguageChanged -= HandleLanguageChanged;
         }
 
         public void Show()
@@ -131,12 +135,12 @@ namespace KnightRun.UI
 
             var buttons = new List<Button>
             {
-                UiFactory.CreateButton(panel.transform, "PLAY", new Vector2(0f, 70f), () => GameBootstrap.StartRunFromMenu()),
-                UiFactory.CreateButton(panel.transform, "PERSONAGENS", new Vector2(0f, 0f), ShowCharactersPanel),
-                UiFactory.CreateButton(panel.transform, "SHOP", new Vector2(0f, -70f), ShowShopPanel),
-                UiFactory.CreateButton(panel.transform, "OPTIONS", new Vector2(0f, -140f), ShowOptionsPanel),
-                UiFactory.CreateButton(panel.transform, "HIGHSCORES", new Vector2(0f, -210f), ShowHighScoresPanel),
-                UiFactory.CreateButton(panel.transform, "EXIT", new Vector2(0f, -280f), ExitGame)
+                UiFactory.CreateButton(panel.transform, Localization.T("ui.play"), new Vector2(0f, 70f), () => GameBootstrap.StartRunFromMenu()),
+                UiFactory.CreateButton(panel.transform, Localization.T("ui.characters"), new Vector2(0f, 0f), ShowCharactersPanel),
+                UiFactory.CreateButton(panel.transform, Localization.T("ui.shop"), new Vector2(0f, -70f), ShowShopPanel),
+                UiFactory.CreateButton(panel.transform, Localization.T("ui.options"), new Vector2(0f, -140f), ShowOptionsPanel),
+                UiFactory.CreateButton(panel.transform, Localization.T("ui.highscores"), new Vector2(0f, -210f), ShowHighScoresPanel),
+                UiFactory.CreateButton(panel.transform, Localization.T("ui.exit"), new Vector2(0f, -280f), ExitGame)
             };
             mainNavigation.SetButtons(buttons);
 
@@ -148,7 +152,7 @@ namespace KnightRun.UI
             var panel = UiFactory.CreatePanel(parent, "ShopPanel", new Color(0.05f, 0.08f, 0.12f, 0.96f));
             panel.SetActive(false);
 
-            UiFactory.CreateText(panel.transform, "SHOP", 48, TextAnchor.UpperCenter,
+            UiFactory.CreateText(panel.transform, Localization.T("ui.shop"), 48, TextAnchor.UpperCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(600f, 80f));
 
             shopCoinsText = UiFactory.CreateText(panel.transform, "Moedas: 0", 24, TextAnchor.UpperCenter,
@@ -158,7 +162,7 @@ namespace KnightRun.UI
 
             shopBackButton = UiFactory.CreateAnchoredButton(
                 panel.transform,
-                "Voltar",
+                Localization.T("ui.back"),
                 new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f),
                 new Vector2(0f, 40f),
@@ -174,7 +178,7 @@ namespace KnightRun.UI
             var panel = UiFactory.CreatePanel(parent, "CharactersPanel", new Color(0.05f, 0.08f, 0.12f, 0.96f));
             panel.SetActive(false);
 
-            UiFactory.CreateText(panel.transform, "PERSONAGENS", 48, TextAnchor.UpperCenter,
+            UiFactory.CreateText(panel.transform, Localization.T("ui.characters"), 48, TextAnchor.UpperCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(700f, 80f));
 
             charactersSummaryText = UiFactory.CreateText(panel.transform, string.Empty, 22, TextAnchor.UpperCenter,
@@ -184,7 +188,7 @@ namespace KnightRun.UI
 
             charactersBackButton = UiFactory.CreateAnchoredButton(
                 panel.transform,
-                "Voltar",
+                Localization.T("ui.back"),
                 new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f),
                 new Vector2(0f, 40f),
@@ -200,15 +204,24 @@ namespace KnightRun.UI
             var panel = UiFactory.CreatePanel(parent, "OptionsPanel", new Color(0.05f, 0.08f, 0.12f, 0.96f));
             panel.SetActive(false);
 
-            UiFactory.CreateText(panel.transform, "OPTIONS", 48, TextAnchor.UpperCenter,
+            UiFactory.CreateText(panel.transform, Localization.T("ui.options"), 48, TextAnchor.UpperCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(600f, 80f));
 
             optionsText = UiFactory.CreateText(panel.transform, string.Empty, 24, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(760f, 320f));
 
+            optionsLanguageButton = UiFactory.CreateAnchoredButton(
+                panel.transform,
+                Localization.GetLanguageButtonLabel(),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 180f),
+                new Vector2(320f, 56f),
+                Localization.ToggleLanguage).GetComponent<Button>();
+
             optionsResetButton = UiFactory.CreateAnchoredButton(
                 panel.transform,
-                "RESETAR SAVE",
+                Localization.T("ui.reset_save"),
                 new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f),
                 new Vector2(0f, 110f),
@@ -217,10 +230,11 @@ namespace KnightRun.UI
 
             optionsNavigation.SetButtons(new[]
             {
+                optionsLanguageButton,
                 optionsResetButton,
                 UiFactory.CreateAnchoredButton(
                     panel.transform,
-                    "Voltar",
+                    Localization.T("ui.back"),
                     new Vector2(0.5f, 0f),
                     new Vector2(0.5f, 0f),
                     new Vector2(0f, 40f),
@@ -235,7 +249,7 @@ namespace KnightRun.UI
             var panel = UiFactory.CreatePanel(parent, "HighScoresPanel", new Color(0.05f, 0.08f, 0.12f, 0.96f));
             panel.SetActive(false);
 
-            UiFactory.CreateText(panel.transform, "HIGH SCORES", 48, TextAnchor.UpperCenter,
+            UiFactory.CreateText(panel.transform, Localization.T("ui.highscores"), 48, TextAnchor.UpperCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(700f, 80f));
 
             highScoresText = UiFactory.CreateText(panel.transform, string.Empty, 22, TextAnchor.UpperLeft,
@@ -245,7 +259,7 @@ namespace KnightRun.UI
             {
                 UiFactory.CreateAnchoredButton(
                     panel.transform,
-                    "Voltar",
+                    Localization.T("ui.back"),
                     new Vector2(0.5f, 0f),
                     new Vector2(0.5f, 0f),
                     new Vector2(0f, 40f),
@@ -306,7 +320,7 @@ namespace KnightRun.UI
         {
             int coins = metaProgression != null ? metaProgression.TotalCoins : 0;
             if (coinsText != null)
-                coinsText.text = $"Moedas: {coins}";
+                coinsText.text = Localization.Format("ui.coins", coins);
 
             if (charactersPanel != null && charactersPanel.activeSelf)
                 RefreshCharactersDisplay();
@@ -316,7 +330,9 @@ namespace KnightRun.UI
         {
             CharacterDefinition character = CharacterCatalog.Get(CharacterSelection.SelectedCharacter);
             if (characterText != null)
-                characterText.text = $"Personagem: {character.DisplayName}";
+                characterText.text = Localization.Format(
+                    "ui.character",
+                    Localization.GetCharacterName(character.Id));
 
             if (charactersPanel != null && charactersPanel.activeSelf)
                 RefreshCharactersDisplay();
@@ -326,7 +342,7 @@ namespace KnightRun.UI
         {
             int coins = metaProgression != null ? metaProgression.TotalCoins : 0;
             if (shopCoinsText != null)
-                shopCoinsText.text = $"Moedas: {coins}";
+                shopCoinsText.text = Localization.Format("ui.coins", coins);
 
             if (shopItemsRoot == null)
                 return;
@@ -344,8 +360,15 @@ namespace KnightRun.UI
                 string next = maxed
                     ? "MAX"
                     : ShopCatalog.GetDescription(id, level + 1);
-                string label =
-                    $"{ShopCatalog.GetName(id)} (Nv {level}/{ShopCatalog.MaxLevel})\n{next}\nCusto: {(maxed ? "-" : cost.ToString())}";
+                string label = Localization.Format(
+                    "ui.shop_item",
+                    ShopCatalog.GetName(id),
+                    Localization.T("ui.level_abbr"),
+                    level,
+                    ShopCatalog.MaxLevel,
+                    next,
+                    Localization.T("ui.cost"),
+                    maxed ? "-" : cost.ToString());
 
                 shopButtons.Add(UiFactory.CreateLayoutButton(
                     shopItemsRoot,
@@ -369,7 +392,13 @@ namespace KnightRun.UI
             int coins = metaProgression != null ? metaProgression.TotalCoins : 0;
             CharacterDefinition selected = CharacterCatalog.Get(CharacterSelection.SelectedCharacter);
             if (charactersSummaryText != null)
-                charactersSummaryText.text = $"Moedas: {coins} | Selecionado: {selected.DisplayName} ({selected.WeaponName})";
+            {
+                charactersSummaryText.text = Localization.Format(
+                    "ui.coins_selected",
+                    coins,
+                    Localization.GetCharacterName(selected.Id),
+                    Localization.GetSkillName(selected.StartingWeapon));
+            }
 
             if (charactersItemsRoot == null)
                 return;
@@ -405,27 +434,25 @@ namespace KnightRun.UI
             bool isSelected = CharacterSelection.SelectedCharacter == character.Id;
             bool isOwned = CharacterOwnership.IsOwned(character.Id);
             bool isUnlocked = CharacterCatalog.IsUnlockedForPurchase(character.Id);
+            string characterName = Localization.GetCharacterName(character.Id);
+            string weaponName = Localization.GetSkillName(character.StartingWeapon);
+
+            string weaponLine = Localization.Format("ui.starting_weapon", weaponName);
 
             if (!isUnlocked)
             {
-                return
-                    $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nBloqueado: {CharacterCatalog.GetUnlockRequirementText(character.Id)}";
+                return $"{characterName}\n{weaponLine}\n{Localization.Format("ui.locked", CharacterCatalog.GetUnlockRequirementText(character.Id))}";
             }
 
             if (!isOwned)
             {
-                return
-                    $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nComprar: {character.PurchaseCost} moedas";
+                return $"{characterName}\n{weaponLine}\n{Localization.Format("ui.buy", character.PurchaseCost)}";
             }
 
             if (isSelected)
-            {
-                return
-                    $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nSELECIONADO";
-            }
+                return $"{characterName}\n{weaponLine}\n{Localization.T("ui.selected")}";
 
-            return
-                $"{character.DisplayName}\nArma inicial: {character.WeaponName}\nSelecionar";
+            return $"{characterName}\n{weaponLine}\n{Localization.T("ui.select")}";
         }
 
         void HandleCharacterAction(HeroCharacterId id)
@@ -463,13 +490,11 @@ namespace KnightRun.UI
 
             if (resetSaveConfirmationPending)
             {
-                optionsText.text =
-                    "ATENCAO: isso apaga moedas, upgrades da loja e high scores.\nClique em CONFIRMAR RESET para continuar.";
+                optionsText.text = Localization.T("ui.reset_warning");
                 return;
             }
 
-            optionsText.text =
-                "Menu: setas/W/S + Enter | clique no botao\nRun: A/D mover | Espaco pular | S / deslizar\nUpgrades: setas + Enter, 1/2/3 ou clique\nM - menu | R - reiniciar run";
+            optionsText.text = Localization.T("ui.options_help");
         }
 
         void HandleResetSaveClick()
@@ -500,7 +525,9 @@ namespace KnightRun.UI
 
             Text label = optionsResetButton.GetComponentInChildren<Text>();
             if (label != null)
-                label.text = resetSaveConfirmationPending ? "CONFIRMAR RESET" : "RESETAR SAVE";
+                label.text = resetSaveConfirmationPending
+                    ? Localization.T("ui.confirm_reset")
+                    : Localization.T("ui.reset_save");
         }
 
         void RefreshHighScoresDisplay()
@@ -510,17 +537,37 @@ namespace KnightRun.UI
 
             if (HighScoreTable.Entries.Count == 0)
             {
-                highScoresText.text = "Nenhuma pontuacao ainda.\nJogue uma run para entrar no ranking!";
+                highScoresText.text = Localization.T("ui.highscores_empty");
                 return;
             }
 
-            highScoresText.text = "Rank   Score     Distancia   Inimigos\n";
+            highScoresText.text = Localization.T("ui.highscores_header");
             for (int i = 0; i < HighScoreTable.Entries.Count; i++)
             {
                 HighScoreEntry entry = HighScoreTable.Entries[i];
                 highScoresText.text +=
                     $"{i + 1,2}.   {entry.score,7}   {entry.distance,8:0}m   {entry.enemies,5}\n";
             }
+        }
+
+        void HandleLanguageChanged()
+        {
+            Localization.TranslateStaticText(canvasRoot != null ? canvasRoot.transform : null);
+
+            if (optionsLanguageButton != null)
+            {
+                Text label = optionsLanguageButton.GetComponentInChildren<Text>();
+                if (label != null)
+                    label.text = Localization.GetLanguageButtonLabel();
+            }
+
+            UpdateResetSaveButtonLabel();
+            RefreshMetaDisplay();
+            RefreshCharacterDisplay();
+            RefreshShopDisplay();
+            RefreshCharactersDisplay();
+            RefreshOptionsDisplay();
+            RefreshHighScoresDisplay();
         }
 
         void TryBuy(ShopUpgradeId id)

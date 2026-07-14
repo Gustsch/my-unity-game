@@ -17,15 +17,15 @@ namespace KnightRun.World
         const float MinEnemySpawnAheadOfPlayer = 34f;
         const float ContinuousSpawnMinAhead = 34f;
         const float ContinuousSpawnMaxAhead = 52f;
-        const float BatSpawnChanceInCave = 0.40f;
+        const float BatSpawnChanceInCave = 0.18f;
         const int MinTreesPerForestSegment = 1;
         const int MaxTreesPerForestSegment = 3;
         const int MinHolesPerMineSegment = 1;
         const int MaxHolesPerMineSegment = 2;
-        const int MinTrenchesPerVolcanoSegment = 1;
-        const int MaxTrenchesPerVolcanoSegment = 2;
+        const float VolcanoTrenchSpawnChanceMultiplier = 0.45f;
         const int MinStalactitesPerIceSegment = 1;
         const int MaxStalactitesPerIceSegment = 3;
+        const float PhaseVisualTransitionDuration = 3.5f;
 
         readonly Queue<TrackSegment> activeSegments = new Queue<TrackSegment>();
         RunnerController player;
@@ -33,6 +33,10 @@ namespace KnightRun.World
         float nextSpawnZ;
         float continuousSpawnTimer;
         int segmentCounter;
+        bool ambientTransitionActive;
+        float ambientTransitionElapsed;
+        Color ambientTransitionStart;
+        Color ambientTransitionTarget;
 
         void Start()
         {
@@ -55,6 +59,8 @@ namespace KnightRun.World
 
         void Update()
         {
+            UpdateAmbientTransition();
+
             if (player == null)
                 return;
 
@@ -214,17 +220,19 @@ namespace KnightRun.World
 
         void SpawnVolcanoHazards(TrackSegment segment, RunPhaseSettings settings)
         {
-            if (Random.value > settings.obstacleChance)
+            float trenchSpawnChance = settings.obstacleChance * VolcanoTrenchSpawnChanceMultiplier;
+            if (Random.value > trenchSpawnChance)
                 return;
 
-            int trenchCount = Random.Range(MinTrenchesPerVolcanoSegment, MaxTrenchesPerVolcanoSegment + 1);
-            for (int i = 0; i < trenchCount; i++)
-            {
-                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
-                    break;
+            // Uma trincheira existente, mesmo fora da tela, impede outra de
+            // nascer até ser removida. Assim nunca há duas visíveis juntas.
+            if (FindFirstObjectByType<VolcanoTrenchObstacle>() != null)
+                return;
 
-                VolcanoTrenchObstacle.Spawn(transform, spawnZ, settings);
-            }
+            if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                return;
+
+            VolcanoTrenchObstacle.Spawn(transform, spawnZ, settings);
         }
 
         void SpawnIceStalactites(TrackSegment segment, RunPhaseSettings settings)
@@ -304,7 +312,7 @@ namespace KnightRun.World
             enemyGo.transform.position = new Vector3(x, 0f, z);
 
             var enemy = enemyGo.AddComponent<Enemy>();
-            enemy.Build();
+            enemy.Build(settings.phase);
 
             int health = EnemyCombatStats.RollHealthForPhase(settings);
             bool isElite = Random.value < EnemyCombatStats.EliteSpawnChance;
@@ -340,16 +348,35 @@ namespace KnightRun.World
 
         void HandlePhaseChanged(RunPhase phase, RunPhaseSettings settings)
         {
-            UpdateAmbient(settings);
+            BeginAmbientTransition(settings.ambientColor);
 
             foreach (TrackSegment segment in activeSegments)
-                segment.ApplyLayout(settings);
+                segment.BeginPhaseTransition(settings, PhaseVisualTransitionDuration);
         }
 
-        static void UpdateAmbient(RunPhaseSettings settings)
+        void BeginAmbientTransition(Color targetColor)
         {
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = settings.ambientColor;
+            ambientTransitionStart = RenderSettings.ambientLight;
+            ambientTransitionTarget = targetColor;
+            ambientTransitionElapsed = 0f;
+            ambientTransitionActive = true;
+        }
+
+        void UpdateAmbientTransition()
+        {
+            if (!ambientTransitionActive)
+                return;
+
+            ambientTransitionElapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(ambientTransitionElapsed / PhaseVisualTransitionDuration);
+            RenderSettings.ambientLight = Color.Lerp(
+                ambientTransitionStart,
+                ambientTransitionTarget,
+                Mathf.SmoothStep(0f, 1f, progress));
+
+            if (progress >= 1f)
+                ambientTransitionActive = false;
         }
 
         public void ResetSpawner()

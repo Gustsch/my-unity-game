@@ -81,7 +81,7 @@ namespace KnightRun.Gameplay
 
         void UpdateOutbound()
         {
-            if (target == null)
+            if (target == null || (player != null && target.position.z <= player.position.z))
             {
                 BeginReturn();
                 return;

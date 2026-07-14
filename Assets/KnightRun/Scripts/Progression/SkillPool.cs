@@ -57,7 +57,7 @@ namespace KnightRun.Progression
             new SkillDefinition { Id = HeroSkillId.Sword, DisplayName = "Espada", Category = UpgradeCategory.Weapon },
             new SkillDefinition { Id = HeroSkillId.Bow, DisplayName = "Arco e Flecha", Category = UpgradeCategory.Weapon },
             new SkillDefinition { Id = HeroSkillId.Shuriken, DisplayName = "Shurikens", Category = UpgradeCategory.Weapon },
-            new SkillDefinition { Id = HeroSkillId.MagicBook, DisplayName = "Livro de Magia", Category = UpgradeCategory.Weapon },
+            new SkillDefinition { Id = HeroSkillId.MagicBook, DisplayName = "Livro de Magia", Category = UpgradeCategory.Skill },
             new SkillDefinition { Id = HeroSkillId.Bomb, DisplayName = "Bombinha", Category = UpgradeCategory.Weapon },
             new SkillDefinition { Id = HeroSkillId.Boomerang, DisplayName = "Bumerangue", Category = UpgradeCategory.Weapon },
             new SkillDefinition { Id = HeroSkillId.ThrowingAxe, DisplayName = "Machado de Arremesso", Category = UpgradeCategory.Weapon },
@@ -82,37 +82,7 @@ namespace KnightRun.Progression
 
         public static string GetDescription(HeroSkillId id, int nextLevel)
         {
-            return id switch
-            {
-                HeroSkillId.Sword => nextLevel == 1
-                    ? "Desbloqueia a espada corpo a corpo e o corte a distancia"
-                    : "+10 dano da espada",
-                HeroSkillId.Bow => nextLevel == 1
-                    ? "Desbloqueia flechas que acertam 1 inimigo"
-                    : "+10 dano da flecha",
-                HeroSkillId.Shuriken => nextLevel == 1
-                    ? $"Lanca shurikens com {ShurikenBaseDamage:0.#} de dano no inimigo mais proximo"
-                    : $"+{ShurikenDamagePerLevel:0.#} dano da shuriken",
-                HeroSkillId.MagicBook => nextLevel == 1
-                    ? "Livros orbitando que bloqueiam projetis inimigos"
-                    : "+1 livro orbitando",
-                HeroSkillId.Bomb => nextLevel == 1
-                    ? $"Arremessa bomba a {BombFixedThrowDistance:0.#}m que explode em area"
-                    : "+10 dano da bomba",
-                HeroSkillId.Boomerang => nextLevel == 1
-                    ? $"Bumerangue com {BoomerangBaseDamage:0.#} de dano no inimigo mais proximo"
-                    : $"+{BoomerangDamagePerLevel:0.#} dano do bumerangue",
-                HeroSkillId.ThrowingAxe => nextLevel == 1
-                    ? $"Machado lento com {ThrowingAxeBaseDamage:0.#} de dano mirando inimigos na tela"
-                    : $"+{ThrowingAxeDamagePerLevel:0.#} dano do machado",
-                HeroSkillId.QuickSlash => $"+{QuickSlashSpeedPerLevel * 100f:0.#}% velocidade de ataque",
-                HeroSkillId.WideArc => $"+{WideArcAreaPerLevel * 100f:0.#}% area do ataque",
-                HeroSkillId.Vigor => $"+{VigorHealthPerLevel} HP maximo",
-                HeroSkillId.AgileSteps => $"+{AgileStepsSpeedPerLevel * 100f:0.#}% velocidade de movimento",
-                HeroSkillId.ExtendedSlide => $"+{ExtendedSlideDurationPerLevel * 100f:0.#}% duracao do slide",
-                HeroSkillId.IronSkin => $"-{IronSkinReductionPerLevel * 100f:0.#}% dano recebido",
-                _ => string.Empty
-            };
+            return Localization.GetSkillDescription(id, nextLevel);
         }
 
         public static UpgradeOffer[] DrawOffers(HeroUpgradeStats stats, int count)

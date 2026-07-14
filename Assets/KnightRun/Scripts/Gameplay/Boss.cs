@@ -15,25 +15,37 @@ namespace KnightRun.Gameplay
 
         Transform player;
         Transform meshTransform;
+        Renderer meshRenderer;
         BoxCollider bodyCollider;
         GameManager gameManager;
+        RunPhase bossPhase;
         bool isDead;
         int maxHealth;
         float currentHealth;
         float shootTimer;
+        float uniqueAttackTimer;
         float screenAheadDistance;
         float pendingPopupDamage;
         float popupBatchTimer;
 
         public int MaxHealth => maxHealth;
         public float CurrentHealth => currentHealth;
+        public RunPhase BossPhase => bossPhase;
 
         public event Action<float, float> OnHealthChanged;
         public event Action<Boss> OnDefeated;
 
         static readonly Color BossTint = new Color(0.55f, 0.08f, 0.12f);
+        static readonly Color EntTint = new Color(0.28f, 0.42f, 0.16f);
+        static readonly Color BatQueenTint = new Color(0.28f, 0.12f, 0.38f);
+        static readonly Color IronGolemTint = new Color(0.45f, 0.42f, 0.4f);
+        static readonly Color MagmaLordTint = new Color(0.85f, 0.28f, 0.08f);
+        static readonly Color CrystalTyrantTint = new Color(0.45f, 0.85f, 0.95f);
+        static readonly Color DesertScorpionTint = new Color(0.72f, 0.48f, 0.18f);
         const float PopupBatchInterval = 0.12f;
         const float ImmediatePopupThreshold = 5f;
+        const float UniqueAttackFirstDelay = 3.5f;
+        const float UniqueAttackInterval = 7f;
 
         public void Build()
         {
@@ -44,12 +56,9 @@ namespace KnightRun.Gameplay
             mesh.transform.localScale = Vector3.one * BodySize;
             mesh.transform.localPosition = new Vector3(0f, BodySize * 0.5f, 0f);
 
-            var renderer = mesh.GetComponent<Renderer>();
-            renderer.sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Enemy);
-            Material material = renderer.material;
-            material.color = BossTint;
-            if (material.HasProperty("_BaseColor"))
-                material.SetColor("_BaseColor", BossTint);
+            meshRenderer = mesh.GetComponent<Renderer>();
+            meshRenderer.sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Enemy);
+            ApplyTint(BossTint);
 
             Destroy(mesh.GetComponent<Collider>());
             meshTransform = mesh.transform;
@@ -60,14 +69,97 @@ namespace KnightRun.Gameplay
             bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
         }
 
-        public void Initialize(int health, float aheadDistance)
+        public void Initialize(int health, float aheadDistance, RunPhase phase)
         {
             maxHealth = Mathf.Max(1, health);
             currentHealth = maxHealth;
             screenAheadDistance = aheadDistance;
-            gameObject.name = $"Boss_HP{maxHealth}";
+            bossPhase = phase;
+            gameObject.name = $"{GetBossName(phase)}_HP{maxHealth}";
             shootTimer = ShootInterval * 0.5f;
+            uniqueAttackTimer = UniqueAttackFirstDelay;
+            ApplyPhaseAppearance();
             NotifyHealthChanged();
+        }
+
+        static string GetBossName(RunPhase phase)
+        {
+            return phase switch
+            {
+                RunPhase.Forest => "EntBoss",
+                RunPhase.Cave => "BatQueenBoss",
+                RunPhase.MineCart => "IronGolemBoss",
+                RunPhase.Volcano => "MagmaLordBoss",
+                RunPhase.IceCavern => "CrystalTyrantBoss",
+                RunPhase.Desert => "DesertScorpionBoss",
+                _ => "Boss"
+            };
+        }
+
+        void ApplyPhaseAppearance()
+        {
+            if (meshTransform == null || meshRenderer == null)
+                return;
+
+            Color tint = BossTint;
+            KnightRunTexture texture = KnightRunTexture.Enemy;
+            Vector3 scale = Vector3.one * BodySize;
+
+            switch (bossPhase)
+            {
+                case RunPhase.Forest:
+                    tint = EntTint;
+                    texture = KnightRunTexture.TreeTrunk;
+                    scale = new Vector3(BodySize * 1.05f, BodySize * 1.25f, BodySize * 1.05f);
+                    break;
+                case RunPhase.Cave:
+                    tint = BatQueenTint;
+                    texture = KnightRunTexture.Enemy;
+                    scale = new Vector3(BodySize * 1.15f, BodySize * 0.85f, BodySize * 1.15f);
+                    break;
+                case RunPhase.MineCart:
+                    tint = IronGolemTint;
+                    texture = KnightRunTexture.MineCart;
+                    scale = new Vector3(BodySize * 1.2f, BodySize * 1.1f, BodySize * 1.1f);
+                    break;
+                case RunPhase.Volcano:
+                    tint = MagmaLordTint;
+                    texture = KnightRunTexture.VolcanoRock;
+                    scale = new Vector3(BodySize * 1.15f, BodySize * 1.15f, BodySize * 1.15f);
+                    break;
+                case RunPhase.IceCavern:
+                    tint = CrystalTyrantTint;
+                    texture = KnightRunTexture.Stalactite;
+                    scale = new Vector3(BodySize * 1.05f, BodySize * 1.3f, BodySize * 1.05f);
+                    break;
+                case RunPhase.Desert:
+                    tint = DesertScorpionTint;
+                    texture = KnightRunTexture.GroundVolcano;
+                    scale = new Vector3(BodySize * 1.35f, BodySize * 0.9f, BodySize * 1.2f);
+                    break;
+            }
+
+            meshTransform.localScale = scale;
+            meshTransform.localPosition = new Vector3(0f, scale.y * 0.5f, 0f);
+            if (bodyCollider != null)
+            {
+                bodyCollider.size = scale;
+                bodyCollider.center = meshTransform.localPosition;
+            }
+
+            meshRenderer.sharedMaterial = KnightRunMaterials.Get(texture);
+            ApplyTint(tint);
+        }
+
+        void ApplyTint(Color color)
+        {
+            if (meshRenderer == null)
+                return;
+
+            Material material = meshRenderer.material;
+            material.color = color;
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", color);
         }
 
         void Start()
@@ -96,6 +188,50 @@ namespace KnightRun.Gameplay
             {
                 shootTimer = ShootInterval;
                 FireProjectile();
+            }
+
+            UpdateUniqueAttack();
+        }
+
+        void UpdateUniqueAttack()
+        {
+            uniqueAttackTimer -= Time.deltaTime;
+            if (uniqueAttackTimer > 0f)
+                return;
+
+            uniqueAttackTimer = UniqueAttackInterval;
+            CastUniqueAttack();
+        }
+
+        void CastUniqueAttack()
+        {
+            if (player == null)
+                return;
+
+            switch (bossPhase)
+            {
+                case RunPhase.Forest:
+                    BossRootSnare.Spawn(new Vector3(player.position.x, 0f, player.position.z));
+                    break;
+                case RunPhase.Cave:
+                    BossBatSwarmAttack.Spawn(player);
+                    break;
+                case RunPhase.MineCart:
+                {
+                    var runner = player.GetComponent<RunnerController>();
+                    if (runner != null)
+                        BossMineDerailAttack.Spawn(runner, transform.position);
+                    break;
+                }
+                case RunPhase.Volcano:
+                    BossMagmaRingAttack.Spawn(new Vector3(player.position.x, 0f, player.position.z));
+                    break;
+                case RunPhase.IceCavern:
+                    BossFreezeRayAttack.Spawn(transform, player);
+                    break;
+                case RunPhase.Desert:
+                    BossSandstormAttack.Spawn(player);
+                    break;
             }
         }
 
@@ -134,7 +270,9 @@ namespace KnightRun.Gameplay
 
             BossAttackBand band = (BossAttackBand)UnityEngine.Random.Range(0, 3);
             Vector3 spawnPosition = transform.position + Vector3.up * (BodySize * 0.75f);
-            int damage = Mathf.Max(1, Mathf.RoundToInt(ProjectileDamage * (RunPhaseManager.Instance.CurrentPhaseIndex + 1)));
+            RunPhaseManager phaseManager = RunPhaseManager.Instance;
+            int difficultyPhase = phaseManager != null ? phaseManager.DifficultyPhaseNumber : 1;
+            int damage = Mathf.Max(1, Mathf.RoundToInt(ProjectileDamage * difficultyPhase));
             BossProjectile.Spawn(spawnPosition, player.position, damage, band);
         }
 

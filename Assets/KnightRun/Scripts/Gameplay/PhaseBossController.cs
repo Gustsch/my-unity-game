@@ -78,7 +78,7 @@ namespace KnightRun.Gameplay
 
             int averageEnemyHealth = EnemyCombatStats.GetAverageEnemyHealth(settings);
             int bossHealth = averageEnemyHealth * BossHealthMultiplier;
-            boss.Initialize(bossHealth, aheadDistance);
+            boss.Initialize(bossHealth, aheadDistance, settings.phase);
             boss.OnDefeated += HandleBossDefeated;
 
             activeBoss = boss;
@@ -90,6 +90,8 @@ namespace KnightRun.Gameplay
         {
             if (activeBoss == boss)
                 activeBoss = null;
+
+            ClearBossHazardsAndEffects();
 
             bossDefeatedForPhase = true;
             CharacterUnlockProgress.MarkBossDefeated(bossSpawnedForPhaseIndex);
@@ -104,9 +106,37 @@ namespace KnightRun.Gameplay
             activeBoss = null;
             bossSpawnedForPhaseIndex = -1;
             bossDefeatedForPhase = false;
+            ClearBossHazardsAndEffects();
+        }
 
+        void ClearBossHazardsAndEffects()
+        {
             foreach (BossProjectile projectile in FindObjectsByType<BossProjectile>(FindObjectsSortMode.None))
                 Destroy(projectile.gameObject);
+
+            foreach (BossRootSnare snare in FindObjectsByType<BossRootSnare>(FindObjectsSortMode.None))
+                Destroy(snare.gameObject);
+
+            foreach (BossBatSwarmAttack attack in FindObjectsByType<BossBatSwarmAttack>(FindObjectsSortMode.None))
+                Destroy(attack.gameObject);
+
+            foreach (BossMineDerailAttack attack in FindObjectsByType<BossMineDerailAttack>(FindObjectsSortMode.None))
+                Destroy(attack.gameObject);
+
+            foreach (BossMagmaRingAttack attack in FindObjectsByType<BossMagmaRingAttack>(FindObjectsSortMode.None))
+                Destroy(attack.gameObject);
+
+            foreach (BossFreezeRayAttack attack in FindObjectsByType<BossFreezeRayAttack>(FindObjectsSortMode.None))
+                Destroy(attack.gameObject);
+
+            foreach (BossSandstormAttack attack in FindObjectsByType<BossSandstormAttack>(FindObjectsSortMode.None))
+                Destroy(attack.gameObject);
+
+            foreach (BossDesertSpine spine in FindObjectsByType<BossDesertSpine>(FindObjectsSortMode.None))
+                Destroy(spine.gameObject);
+
+            var runner = FindFirstObjectByType<RunnerController>();
+            runner?.ClearStatusEffects();
         }
     }
 }

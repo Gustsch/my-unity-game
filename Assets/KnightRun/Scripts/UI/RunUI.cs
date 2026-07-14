@@ -65,7 +65,7 @@ namespace KnightRun.UI
             scoreText = CreateText(canvasRoot.transform, "Score: 0", 28, TextAnchor.UpperRight, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, -90f));
             UiFactory.CreateAnchoredButton(
                 canvasRoot.transform,
-                "PAUSAR",
+                Localization.T("ui.pause"),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(-20f, -135f),
@@ -103,6 +103,9 @@ namespace KnightRun.UI
                 upgradeManager.OnXpChanged += UpdateXpBar;
                 UpdateXpBar(upgradeManager.XpTowardNextLevel, upgradeManager.XpRequiredForNextLevel);
             }
+
+            Localization.OnLanguageChanged += HandleLanguageChanged;
+            HandleLanguageChanged();
         }
 
         public void Show()
@@ -160,25 +163,26 @@ namespace KnightRun.UI
             if (upgradeManager != null)
                 upgradeManager.OnXpChanged -= UpdateXpBar;
 
+            Localization.OnLanguageChanged -= HandleLanguageChanged;
             ClearTrackedBoss();
         }
 
         void UpdateScore(int score)
         {
             if (scoreText != null)
-                scoreText.text = $"Score: {score}  |  Moedas: {gameManager.Coins}";
+                scoreText.text = Localization.Format("ui.score", score, gameManager.Coins);
         }
 
         void UpdateHealth(int current, int max)
         {
             if (healthText != null)
-                healthText.text = $"Vida: {Mathf.Max(0, current)}/{max}";
+                healthText.text = Localization.T("ui.health") + $": {Mathf.Max(0, current)}/{max}";
         }
 
         void UpdateEnemiesDefeated(int count)
         {
             if (enemiesDefeatedText != null)
-                enemiesDefeatedText.text = $"Inimigos: {count}";
+                enemiesDefeatedText.text = Localization.T("ui.enemies") + $": {count}";
         }
 
         void UpdateXpBar(int current, int required)
@@ -450,7 +454,7 @@ namespace KnightRun.UI
 
             pauseTitleText = UiFactory.CreateText(
                 pausePanel.transform,
-                "PAUSADO",
+                Localization.T("ui.paused"),
                 48,
                 TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f),
@@ -460,7 +464,7 @@ namespace KnightRun.UI
 
             UiFactory.CreateAnchoredButton(
                 pausePanel.transform,
-                "CONTINUAR",
+                Localization.T("ui.continue"),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0f, -30f),
@@ -469,7 +473,7 @@ namespace KnightRun.UI
 
             UiFactory.CreateAnchoredButton(
                 pausePanel.transform,
-                "MENU",
+                Localization.T("ui.menu"),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0f, -110f),
@@ -480,7 +484,7 @@ namespace KnightRun.UI
         void UpdatePhase(RunPhase phase, RunPhaseSettings settings)
         {
             if (phaseText != null)
-                phaseText.text = settings.displayName;
+                phaseText.text = Localization.GetPhaseName(phase);
         }
 
         void UpdateState(GameState state)
@@ -515,10 +519,31 @@ namespace KnightRun.UI
                     hintText.enabled = false;
                     break;
                 case GameState.GameOver:
-                    stateText.text = "Game Over!\nMoedas salvas!\nR = jogar de novo | M = menu";
+                    stateText.text = Localization.T("ui.game_over");
                     hintText.enabled = false;
                     break;
             }
+        }
+
+        void HandleLanguageChanged()
+        {
+            Localization.TranslateStaticText(canvasRoot != null ? canvasRoot.transform : null);
+
+            if (hintText != null)
+                hintText.text = Localization.T("ui.run_hint");
+
+            if (gameManager != null)
+            {
+                UpdateScore(gameManager.Score);
+                UpdateEnemiesDefeated(gameManager.EnemiesDefeated);
+                UpdateState(gameManager.State);
+            }
+
+            if (knightHealth != null)
+                UpdateHealth(knightHealth.CurrentHealth, knightHealth.MaxHealth);
+
+            if (phaseManager != null)
+                UpdatePhase(phaseManager.CurrentPhase, phaseManager.CurrentSettings);
         }
 
         static Text CreateText(Transform parent, string content, int fontSize, TextAnchor anchor, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition)

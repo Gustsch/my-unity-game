@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using KnightRun.Core;
 using KnightRun.Player;
 using KnightRun.Progression;
+using KnightRun;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -64,6 +65,9 @@ namespace KnightRun.UI
 
             if (upgradeManager != null)
                 upgradeManager.OnUpgradeOffered += ShowOffer;
+
+            Localization.OnLanguageChanged += HandleLanguageChanged;
+            HandleLanguageChanged();
         }
 
         void Update()
@@ -88,6 +92,8 @@ namespace KnightRun.UI
         {
             if (upgradeManager != null)
                 upgradeManager.OnUpgradeOffered -= ShowOffer;
+
+            Localization.OnLanguageChanged -= HandleLanguageChanged;
         }
 
         void ShowOffer(UpgradeOffer[] options)
@@ -99,10 +105,12 @@ namespace KnightRun.UI
                 heroStats = FindFirstObjectByType<HeroUpgradeStats>();
 
             if (titleText != null && upgradeManager != null)
-                titleText.text = $"Level Up! Proximo em {upgradeManager.XpRequiredForNextLevel - upgradeManager.XpTowardNextLevel} XP";
+                titleText.text = Localization.Format(
+                    "ui.level_up",
+                    upgradeManager.XpRequiredForNextLevel - upgradeManager.XpTowardNextLevel);
 
             if (hintText != null)
-                hintText.text = "Setas + Enter, 1/2/3 ou clique para escolher";
+                hintText.text = Localization.T("ui.upgrade_hint");
 
             RebuildOptionButtons(options);
         }
@@ -139,8 +147,8 @@ namespace KnightRun.UI
             if (offer.IsCoinReward)
             {
                 return skillSlotsExhausted(options)
-                    ? $"{index + 1}. +{offer.CoinAmount} moedas\nTodos os upgrades escolhidos estao no maximo"
-                    : $"{index + 1}. +{offer.CoinAmount} moedas\nRecompensa em moedas";
+                    ? Localization.Format("ui.coins_reward_max", index + 1, offer.CoinAmount)
+                    : Localization.Format("ui.coins_reward", index + 1, offer.CoinAmount);
             }
 
             if (heroStats == null)
@@ -149,9 +157,18 @@ namespace KnightRun.UI
             SkillDefinition skill = offer.Skill;
             int currentLevel = heroStats.GetLevel(skill.Id);
             int nextLevel = currentLevel + 1;
-            string category = skill.Category == UpgradeCategory.Weapon ? "Arma" : "Skill";
-            string levelLabel = currentLevel == 0 ? "Nv 0 -> 1" : $"Nv {currentLevel} -> {nextLevel}";
-            return $"{index + 1}. [{category}] {skill.DisplayName} ({levelLabel})\n{SkillPool.GetDescription(skill.Id, nextLevel)}";
+            string category = skill.Category == UpgradeCategory.Weapon
+                ? Localization.T("ui.weapon")
+                : Localization.T("ui.skill");
+            string level = Localization.T("ui.level_abbr");
+            string levelLabel = currentLevel == 0 ? $"{level} 0 -> 1" : $"{level} {currentLevel} -> {nextLevel}";
+            return $"{index + 1}. [{category}] {Localization.GetSkillName(skill.Id)} ({levelLabel})\n{SkillPool.GetDescription(skill.Id, nextLevel)}";
+        }
+
+        void HandleLanguageChanged()
+        {
+            if (currentOptions != null && panelRoot != null && panelRoot.activeSelf)
+                ShowOffer(currentOptions);
         }
 
         void SelectOption(int index)
