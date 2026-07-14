@@ -35,6 +35,7 @@ namespace KnightRun
                 runtimeRoot = null;
             }
 
+            ConfigureRuntimePerformance();
             SuppressDefaultSceneVisuals();
             ConfigureInput();
 
@@ -123,6 +124,12 @@ namespace KnightRun
             GameManager.Instance?.EnterMainMenu();
             RunUI.Instance?.Hide();
             MainMenuUI.Instance?.Show();
+        }
+
+        static void ConfigureRuntimePerformance()
+        {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
         }
 
         static void ConfigureInput()

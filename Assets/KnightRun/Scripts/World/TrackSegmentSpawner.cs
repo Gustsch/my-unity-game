@@ -224,8 +224,6 @@ namespace KnightRun.World
             if (Random.value > trenchSpawnChance)
                 return;
 
-            // Uma trincheira existente, mesmo fora da tela, impede outra de
-            // nascer até ser removida. Assim nunca há duas visíveis juntas.
             if (FindFirstObjectByType<VolcanoTrenchObstacle>() != null)
                 return;
 

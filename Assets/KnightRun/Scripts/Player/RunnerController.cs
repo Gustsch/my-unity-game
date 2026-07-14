@@ -376,8 +376,12 @@ namespace KnightRun.Player
 
             verticalVelocity += Gravity * Time.deltaTime;
 
-            Vector3 motion = new Vector3(position.x - transform.position.x, verticalVelocity, speed * phaseMultiplier) * Time.deltaTime;
-            controller.Move(motion);
+            // X ja foi calculado com deltaTime (ou MoveTowards).
+            // Y/Z precisam de deltaTime uma unica vez.
+            float deltaX = position.x - transform.position.x;
+            float deltaY = verticalVelocity * Time.deltaTime;
+            float deltaZ = speed * phaseMultiplier * Time.deltaTime;
+            controller.Move(new Vector3(deltaX, deltaY, deltaZ));
         }
 
         float ApplyIceMovement(float currentX)
