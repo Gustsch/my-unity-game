@@ -39,9 +39,9 @@ namespace KnightRun.Player
         float chillTimer;
         float chillMoveMultiplier = 1f;
 
-        const float LaneSwitchSpeed = 20f;
+        const float LaneSwitchSpeed = 15f;
         const float BaseFreeMoveSpeed = 5f;
-        const float JumpForce = 10f;
+        const float JumpForce = 12f;
         const float Gravity = -32f;
         const float BaseSlideDuration = 0.55f;
         const float SlideImmunityStart = 0.25f;

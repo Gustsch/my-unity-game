@@ -7,7 +7,7 @@ namespace KnightRun.Gameplay
 {
     public class BossProjectile : MonoBehaviour
     {
-        const float Speed = 25f;
+        const float Speed = 30f;
         const float MaxLifetime = 8f;
         const float HitRadius = 0.55f;
 

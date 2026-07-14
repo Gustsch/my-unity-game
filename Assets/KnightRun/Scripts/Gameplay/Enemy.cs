@@ -33,6 +33,7 @@ namespace KnightRun.Gameplay
 
         static readonly Color EliteTint = new Color(0.28f, 0.28f, 0.32f);
         static readonly Color FrozenTint = new Color(0.55f, 0.82f, 1f);
+        const string GoblinVisualResourcesPath = "KnightRun/Enemies";
         const float BodySize = 1f;
         const float MoveSpeed = 5f;
         const float DespawnBehindDistance = 10f;
@@ -43,6 +44,7 @@ namespace KnightRun.Gameplay
         const float MinKnockbackDistance = 0.1f;
         const float MaxKnockbackDistance = 0.4f;
         const float EliteMaxKnockbackDistance = 0.22f;
+        const float EliteSizeMultiplier = 2f;
         const float KnockbackCloseDistance = 3f;
         const float KnockbackFarDistance = 18f;
 
@@ -52,6 +54,8 @@ namespace KnightRun.Gameplay
         static readonly Vector3 MeshKnockedPosition = new Vector3(0f, 0.18f, 0f);
         static readonly Vector3 MeshKnockedScale = new Vector3(BodySize, BodySize * 0.35f, BodySize);
         static readonly Quaternion MeshKnockedRotation = Quaternion.Euler(0f, 0f, 90f);
+        static GameObject[] goblinVisualPrefabs;
+        static bool goblinVisualLoadAttempted;
 
         public void Build()
         {
@@ -72,12 +76,47 @@ namespace KnightRun.Gameplay
 
         void BuildVisual(Transform root)
         {
+            GameObject prefab = GetRandomGoblinVisual();
+            if (prefab != null)
+            {
+                GameObject goblin = Instantiate(prefab, root, false);
+                goblin.name = "Goblin";
+                goblin.transform.localPosition = new Vector3(0f, -BodySize * 0.5f, 0f);
+                goblin.transform.localRotation = Quaternion.identity;
+                goblin.transform.localScale = Vector3.one;
+
+                foreach (Collider visualCollider in goblin.GetComponentsInChildren<Collider>(true))
+                {
+                    visualCollider.enabled = false;
+                    Destroy(visualCollider);
+                }
+
+                return;
+            }
+
             var mesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
             mesh.name = "Body";
             mesh.transform.SetParent(root, false);
             mesh.transform.localScale = Vector3.one;
             mesh.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Enemy);
             Destroy(mesh.GetComponent<Collider>());
+        }
+
+        static GameObject GetRandomGoblinVisual()
+        {
+            if (!goblinVisualLoadAttempted)
+            {
+                goblinVisualLoadAttempted = true;
+                goblinVisualPrefabs = Resources.LoadAll<GameObject>(GoblinVisualResourcesPath);
+
+                if (goblinVisualPrefabs.Length == 0)
+                    Debug.LogWarning($"No goblin visuals found at Resources/{GoblinVisualResourcesPath}. Using enemy fallback.");
+            }
+
+            if (goblinVisualPrefabs == null || goblinVisualPrefabs.Length == 0)
+                return null;
+
+            return goblinVisualPrefabs[Random.Range(0, goblinVisualPrefabs.Length)];
         }
 
         public void Initialize(int health, int damage = EnemyCombatStats.BaseContactDamage, bool elite = false)
@@ -94,7 +133,26 @@ namespace KnightRun.Gameplay
 
         void ApplyEliteVisual()
         {
+            ApplyStandingDimensions();
             ApplyTint(EliteTint);
+        }
+
+        void ApplyStandingDimensions()
+        {
+            float sizeMultiplier = isElite ? EliteSizeMultiplier : 1f;
+
+            if (meshTransform != null)
+            {
+                meshTransform.localPosition = MeshStandPosition * sizeMultiplier;
+                meshTransform.localScale = MeshStandScale * sizeMultiplier;
+                meshTransform.localRotation = MeshStandRotation;
+            }
+
+            if (bodyCollider != null)
+            {
+                bodyCollider.size = Vector3.one * BodySize * sizeMultiplier;
+                bodyCollider.center = new Vector3(0f, BodySize * 0.5f * sizeMultiplier, 0f);
+            }
         }
 
         void Start()
@@ -253,15 +311,17 @@ namespace KnightRun.Gameplay
 
             if (meshTransform != null)
             {
-                meshTransform.localPosition = MeshKnockedPosition;
-                meshTransform.localScale = MeshKnockedScale;
+                float sizeMultiplier = isElite ? EliteSizeMultiplier : 1f;
+                meshTransform.localPosition = MeshKnockedPosition * sizeMultiplier;
+                meshTransform.localScale = MeshKnockedScale * sizeMultiplier;
                 meshTransform.localRotation = MeshKnockedRotation;
             }
 
             if (bodyCollider != null)
             {
-                bodyCollider.size = new Vector3(BodySize, BodySize * 0.35f, BodySize);
-                bodyCollider.center = new Vector3(0f, 0.18f, 0f);
+                float sizeMultiplier = isElite ? EliteSizeMultiplier : 1f;
+                bodyCollider.size = new Vector3(BodySize, BodySize * 0.35f, BodySize) * sizeMultiplier;
+                bodyCollider.center = new Vector3(0f, 0.18f * sizeMultiplier, 0f);
             }
         }
 
@@ -270,18 +330,7 @@ namespace KnightRun.Gameplay
             isKnockedDown = false;
             knockdownTimer = 0f;
 
-            if (meshTransform != null)
-            {
-                meshTransform.localPosition = MeshStandPosition;
-                meshTransform.localScale = MeshStandScale;
-                meshTransform.localRotation = MeshStandRotation;
-            }
-
-            if (bodyCollider != null)
-            {
-                bodyCollider.size = Vector3.one * BodySize;
-                bodyCollider.center = new Vector3(0f, BodySize * 0.5f, 0f);
-            }
+            ApplyStandingDimensions();
 
             isFrozenTintApplied = false;
             if (isElite)
