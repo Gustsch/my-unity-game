@@ -22,19 +22,14 @@ namespace KnightRun.Gameplay
         {
             areaMultiplier = Mathf.Max(1f, areaMultiplier);
 
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            var go = new GameObject("Bomb");
             go.name = "Bomb";
-            go.transform.localScale = Vector3.one * 0.35f;
-            go.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.VolcanoRock);
-            Object.Destroy(go.GetComponent<Collider>());
-
-            var fuse = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            fuse.name = "Fuse";
-            fuse.transform.SetParent(go.transform, false);
-            fuse.transform.localScale = new Vector3(0.12f, 0.18f, 0.12f);
-            fuse.transform.localPosition = new Vector3(0f, 0.42f, 0f);
-            fuse.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.Coin);
-            Object.Destroy(fuse.GetComponent<Collider>());
+            WeaponAssetVisual.Create(
+                "Bomb",
+                go.transform,
+                0.55f,
+                Quaternion.Euler(-90f, 0f, 0f),
+                Vector3.zero);
 
             var bomb = go.AddComponent<BombProjectile>();
             bomb.startPosition = from;

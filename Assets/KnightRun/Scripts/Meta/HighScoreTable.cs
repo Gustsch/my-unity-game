@@ -10,6 +10,7 @@ namespace KnightRun.Meta
         public int score;
         public float distance;
         public int enemies;
+        public long recordedAtUtcTicks;
     }
 
     public static class HighScoreTable
@@ -33,7 +34,8 @@ namespace KnightRun.Meta
                 {
                     score = PlayerPrefs.GetInt($"KnightRun_HighScore_{i}_Score", 0),
                     distance = PlayerPrefs.GetFloat($"KnightRun_HighScore_{i}_Distance", 0f),
-                    enemies = PlayerPrefs.GetInt($"KnightRun_HighScore_{i}_Enemies", 0)
+                    enemies = PlayerPrefs.GetInt($"KnightRun_HighScore_{i}_Enemies", 0),
+                    recordedAtUtcTicks = GetStoredTicks(i)
                 });
             }
         }
@@ -44,7 +46,8 @@ namespace KnightRun.Meta
             {
                 score = score,
                 distance = distance,
-                enemies = enemies
+                enemies = enemies,
+                recordedAtUtcTicks = DateTime.UtcNow.Ticks
             });
 
             entries.Sort((a, b) => b.score.CompareTo(a.score));
@@ -64,9 +67,16 @@ namespace KnightRun.Meta
                 PlayerPrefs.SetInt($"KnightRun_HighScore_{i}_Score", entry.score);
                 PlayerPrefs.SetFloat($"KnightRun_HighScore_{i}_Distance", entry.distance);
                 PlayerPrefs.SetInt($"KnightRun_HighScore_{i}_Enemies", entry.enemies);
+                PlayerPrefs.SetString($"KnightRun_HighScore_{i}_Ticks", entry.recordedAtUtcTicks.ToString());
             }
 
             PlayerPrefs.Save();
+        }
+
+        static long GetStoredTicks(int index)
+        {
+            string raw = PlayerPrefs.GetString($"KnightRun_HighScore_{index}_Ticks", string.Empty);
+            return long.TryParse(raw, out long ticks) ? ticks : 0L;
         }
 
         public static void Clear()
@@ -78,6 +88,7 @@ namespace KnightRun.Meta
                 PlayerPrefs.DeleteKey($"KnightRun_HighScore_{i}_Score");
                 PlayerPrefs.DeleteKey($"KnightRun_HighScore_{i}_Distance");
                 PlayerPrefs.DeleteKey($"KnightRun_HighScore_{i}_Enemies");
+                PlayerPrefs.DeleteKey($"KnightRun_HighScore_{i}_Ticks");
             }
         }
     }

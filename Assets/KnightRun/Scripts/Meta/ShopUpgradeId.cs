@@ -9,5 +9,6 @@ namespace KnightRun.Meta
         BaseDamage,
         Healing,
         MultiStrike,
+        CriticalChance,
     }
 }

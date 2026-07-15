@@ -230,6 +230,7 @@ namespace KnightRun.Gameplay
 
             int damage = runner.IsGrounded ? GroundedDamage : AirborneDamage;
             health.TakeDamage(damage);
+            runner.ApplyPhaseObstacleHit();
             contactCooldownTimer = ContactCooldown;
         }
 

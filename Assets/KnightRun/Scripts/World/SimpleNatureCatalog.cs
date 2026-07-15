@@ -42,6 +42,16 @@ namespace KnightRun.World
             return GetRandom(obstaclePrefabs);
         }
 
+        public GameObject GetRandomRock()
+        {
+            if (obstaclePrefabs == null || obstaclePrefabs.Length == 0)
+                return null;
+
+            const int rockPrefabCount = 4;
+            int count = Mathf.Min(rockPrefabCount, obstaclePrefabs.Length);
+            return GetAt(obstaclePrefabs, Random.Range(0, count));
+        }
+
         public GameObject GetRandomDecoration()
         {
             return GetRandom(decorationPrefabs);

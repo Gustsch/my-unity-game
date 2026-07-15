@@ -116,6 +116,7 @@ namespace KnightRun.Gameplay
                 return;
 
             health.TakeDamage(ContactDamage);
+            runner.ApplyPhaseObstacleHit();
             contactCooldownTimer = ContactCooldown;
         }
 

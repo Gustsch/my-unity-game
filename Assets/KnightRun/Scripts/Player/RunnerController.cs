@@ -19,6 +19,7 @@ namespace KnightRun.Player
         public bool IsGrounded { get; private set; } = true;
         public bool IsRooted => rootTimer > 0f;
         public bool IsChilled => chillTimer > 0f;
+        public bool IsStumbling => stumbleTimer > 0f;
         public bool IsSlideInvulnerable =>
             IsSliding && GetSlidePhase() >= SlideImmunityStart && GetSlidePhase() <= SlideImmunityEnd;
 
@@ -38,6 +39,9 @@ namespace KnightRun.Player
         float rootTimer;
         float chillTimer;
         float chillMoveMultiplier = 1f;
+        float stumbleTimer;
+        float stumbleElapsed;
+        float stumbleOffsetX;
 
         const float LaneSwitchSpeed = 15f;
         const float BaseFreeMoveSpeed = 5f;
@@ -54,6 +58,10 @@ namespace KnightRun.Player
         const float IceStartAcceleration = 240f;
         const float IceDeceleration = 320f;
         const float IceStopThreshold = 0.15f;
+        const float StumbleDuration = 1f;
+        const float StumbleSpeedMultiplier = 0.65f;
+        const float StumbleSwayAmplitude = 0.12f;
+        const float StumbleSwayFrequency = 24f;
 
         float FreeMoveSpeed
         {
@@ -124,6 +132,12 @@ namespace KnightRun.Player
                     chillMoveMultiplier = 1f;
             }
 
+            if (stumbleTimer > 0f)
+            {
+                stumbleTimer -= Time.deltaTime;
+                stumbleElapsed += Time.deltaTime;
+            }
+
             HandleInput();
             UpdateSlide();
             Move();
@@ -163,10 +177,24 @@ namespace KnightRun.Player
             chillMoveMultiplier = 1f;
         }
 
+        public void ApplyPhaseObstacleHit()
+        {
+            stumbleTimer = StumbleDuration;
+            stumbleElapsed = 0f;
+        }
+
+        void ClearStumble()
+        {
+            stumbleTimer = 0f;
+            stumbleElapsed = 0f;
+            stumbleOffsetX = 0f;
+        }
+
         public void ClearStatusEffects()
         {
             ClearRoot();
             ClearChill();
+            ClearStumble();
         }
 
         void HandlePhaseChanged(RunPhase phase, RunPhaseSettings settings)
@@ -334,6 +362,7 @@ namespace KnightRun.Player
                 : 1f;
 
             Vector3 position = transform.position;
+            position.x -= stumbleOffsetX;
             bool grounded = controller.isGrounded;
 
             if (IsRooted)
@@ -373,10 +402,23 @@ namespace KnightRun.Player
             }
 
             verticalVelocity += Gravity * Time.deltaTime;
-            float deltaX = position.x - transform.position.x;
+            float nextStumbleOffset = GetStumbleOffset();
+            float targetX = Mathf.Clamp(position.x + nextStumbleOffset, TrackMinX, TrackMaxX);
+            float deltaX = targetX - transform.position.x;
             float deltaY = verticalVelocity * Time.deltaTime;
-            float deltaZ = speed * phaseMultiplier * Time.deltaTime;
+            float stumbleSpeed = IsStumbling ? StumbleSpeedMultiplier : 1f;
+            float deltaZ = speed * phaseMultiplier * stumbleSpeed * Time.deltaTime;
             controller.Move(new Vector3(deltaX, deltaY, deltaZ));
+            stumbleOffsetX = targetX - position.x;
+        }
+
+        float GetStumbleOffset()
+        {
+            if (!IsStumbling)
+                return 0f;
+
+            float fade = Mathf.Clamp01(stumbleTimer / StumbleDuration);
+            return Mathf.Sin(stumbleElapsed * StumbleSwayFrequency) * StumbleSwayAmplitude * fade;
         }
 
         float ApplyIceMovement(float currentX)
@@ -447,6 +489,7 @@ namespace KnightRun.Player
             rootTimer = 0f;
             chillTimer = 0f;
             chillMoveMultiplier = 1f;
+            ClearStumble();
             fallRestartCooldown = 0.5f;
             EndSlide();
             GetComponent<KnightHealth>()?.ResetHealth();

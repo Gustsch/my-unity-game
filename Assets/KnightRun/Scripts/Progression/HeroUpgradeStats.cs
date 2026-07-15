@@ -90,7 +90,9 @@ namespace KnightRun.Progression
         public float AttackAreaMultiplier => 1f;
         public int BonusMaxHealth => GetLevel(HeroSkillId.Vigor) * SkillPool.VigorHealthPerLevel;
         public float DamageReductionPercent => GetLevel(HeroSkillId.IronSkin) * SkillPool.IronSkinReductionPerLevel;
-        public float CriticalChance => GetLevel(HeroSkillId.CriticalStrike) * SkillPool.CriticalStrikeChancePerLevel;
+        public float CriticalChance =>
+            GetLevel(HeroSkillId.CriticalStrike) * SkillPool.CriticalStrikeChancePerLevel +
+            MetaBonuses.CriticalChance;
         public float ExperienceGainMultiplier => 1f + GetLevel(HeroSkillId.ExperienceBoost) * SkillPool.ExperienceBoostPerLevel;
 
         public bool HasPierceWeapon()

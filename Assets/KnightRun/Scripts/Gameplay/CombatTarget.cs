@@ -29,14 +29,16 @@ namespace KnightRun.Gameplay
             if (alreadyHitTargets != null && !alreadyHitTargets.Add(targetId))
                 return false;
 
-            float finalDamage = ApplyCritical(damage);
+            float finalDamage = ApplyCritical(damage, out bool isCritical);
             int roundedDamage = Mathf.Max(1, Mathf.RoundToInt(finalDamage));
-            ApplyDamage(target, roundedDamage);
+            ApplyDamage(target, roundedDamage, isCritical);
             return true;
         }
 
-        static float ApplyCritical(float damage)
+        static float ApplyCritical(float damage, out bool isCritical)
         {
+            isCritical = false;
+
             HeroUpgradeStats stats = Object.FindFirstObjectByType<HeroUpgradeStats>();
             if (stats == null || stats.CriticalChance <= 0f)
                 return damage;
@@ -44,6 +46,7 @@ namespace KnightRun.Gameplay
             if (Random.value >= stats.CriticalChance)
                 return damage;
 
+            isCritical = true;
             return damage * SkillPool.CriticalStrikeDamageMultiplier;
         }
 
@@ -78,18 +81,18 @@ namespace KnightRun.Gameplay
             return false;
         }
 
-        static void ApplyDamage(Component target, int damage)
+        static void ApplyDamage(Component target, int damage, bool isCritical)
         {
             switch (target)
             {
                 case Enemy enemy:
-                    enemy.TakeDamage(damage);
+                    enemy.TakeDamage(damage, isCritical);
                     break;
                 case BatEnemy bat:
-                    bat.TakeDamage(damage);
+                    bat.TakeDamage(damage, isCritical);
                     break;
                 case Boss boss:
-                    boss.TakeDamage(damage);
+                    boss.TakeDamage(damage, isCritical);
                     break;
             }
         }

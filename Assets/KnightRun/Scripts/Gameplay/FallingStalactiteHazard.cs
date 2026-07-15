@@ -228,6 +228,7 @@ namespace KnightRun.Gameplay
                 return;
 
             health.TakeDamage(ImpactDamage);
+            other.GetComponent<RunnerController>()?.ApplyPhaseObstacleHit();
             contactCooldownTimer = ContactCooldown;
             damagedThisFall = true;
         }

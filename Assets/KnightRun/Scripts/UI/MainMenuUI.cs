@@ -252,7 +252,7 @@ namespace KnightRun.UI
             UiFactory.CreateText(panel.transform, Localization.T("ui.highscores"), 48, TextAnchor.UpperCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(700f, 80f));
 
-            highScoresText = UiFactory.CreateText(panel.transform, string.Empty, 22, TextAnchor.UpperLeft,
+            highScoresText = UiFactory.CreateText(panel.transform, string.Empty, 18, TextAnchor.UpperLeft,
                 new Vector2(0.05f, 0.15f), new Vector2(0.95f, 0.85f), Vector2.zero, Vector2.zero);
 
             highScoresNavigation.SetButtons(new[]
@@ -545,8 +545,9 @@ namespace KnightRun.UI
             for (int i = 0; i < HighScoreTable.Entries.Count; i++)
             {
                 HighScoreEntry entry = HighScoreTable.Entries[i];
+                string date = Localization.FormatRecordDate(entry.recordedAtUtcTicks);
                 highScoresText.text +=
-                    $"{i + 1,2}.   {entry.score,7}   {entry.distance,8:0}m   {entry.enemies,5}\n";
+                    $"{i + 1,2}.   {entry.score,7}   {entry.distance,7:0}m  {entry.enemies,4}   {date}\n";
             }
         }
 

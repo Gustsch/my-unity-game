@@ -29,6 +29,7 @@ namespace KnightRun.Gameplay
         const float PopupBatchInterval = 0.12f;
         const float ImmediatePopupThreshold = 5f;
         const float SwordReachHeight = 1.75f;
+        const float DeathShrinkDuration = 0.5f;
 
         Transform player;
         Transform meshRoot;
@@ -261,12 +262,17 @@ namespace KnightRun.Gameplay
 
         public void TakeDamage(float damage)
         {
+            TakeDamage(damage, false);
+        }
+
+        public void TakeDamage(float damage, bool isCritical)
+        {
             if (isDead || damage <= 0f)
                 return;
 
             int roundedDamage = Mathf.Max(1, Mathf.RoundToInt(damage));
             currentHealth -= roundedDamage;
-            QueueDamagePopup(roundedDamage);
+            QueueDamagePopup(roundedDamage, isCritical);
 
             if (currentHealth <= 0f)
                 Die();
@@ -277,17 +283,22 @@ namespace KnightRun.Gameplay
             TakeDamage((float)damage);
         }
 
+        public void TakeDamage(int damage, bool isCritical)
+        {
+            TakeDamage((float)damage, isCritical);
+        }
+
         public void ForceKill()
         {
             Die();
         }
 
-        void QueueDamagePopup(float damage)
+        void QueueDamagePopup(float damage, bool isCritical)
         {
-            if (damage >= ImmediatePopupThreshold)
+            if (isCritical || damage >= ImmediatePopupThreshold)
             {
                 FlushDamagePopup();
-                SpawnDamagePopup(damage);
+                SpawnDamagePopup(damage, isCritical);
                 return;
             }
 
@@ -311,16 +322,16 @@ namespace KnightRun.Gameplay
             if (pendingPopupDamage <= 0f)
                 return;
 
-            SpawnDamagePopup(pendingPopupDamage);
+            SpawnDamagePopup(pendingPopupDamage, false);
             pendingPopupDamage = 0f;
             popupBatchTimer = 0f;
         }
 
-        void SpawnDamagePopup(float damage)
+        void SpawnDamagePopup(float damage, bool isCritical)
         {
             Vector3 position = transform.position + Vector3.up * HeadPopupHeight;
             position.x += Random.Range(-0.12f, 0.12f);
-            FloatingDamageNumber.Spawn(position, damage);
+            FloatingDamageNumber.Spawn(position, damage, isCritical);
         }
 
         void Die()
@@ -333,7 +344,7 @@ namespace KnightRun.Gameplay
             GameManager.Instance?.AddEnemyDefeated();
             ExperienceOrb.Spawn(transform.position, ExperienceOrb.DefaultValue);
             EnemyLootDrop.TrySpawnSpecialDrop(transform.position);
-            Destroy(gameObject);
+            DeathShrinkEffect.Play(gameObject, DeathShrinkDuration);
         }
 
         void ResolvePlayer()

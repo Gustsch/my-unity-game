@@ -73,6 +73,23 @@ namespace KnightRun
             return T("ui.language_button");
         }
 
+        public static string FormatRecordDate(long utcTicks)
+        {
+            if (utcTicks <= 0L)
+                return "-";
+
+            DateTime localTime = new DateTime(utcTicks, DateTimeKind.Utc).ToLocalTime();
+            string pattern = UsesMonthFirstDateFormat()
+                ? "MM/dd/yy H:mm:ss"
+                : "dd/MM/yy H:mm:ss";
+            return localTime.ToString(pattern);
+        }
+
+        static bool UsesMonthFirstDateFormat()
+        {
+            return CurrentLanguage == GameLanguage.English;
+        }
+
         public static string GetPhaseName(Core.RunPhase phase)
         {
             return phase switch
@@ -166,6 +183,7 @@ namespace KnightRun
                 ShopUpgradeId.BaseDamage => T("shop.base_damage"),
                 ShopUpgradeId.Healing => T("shop.healing"),
                 ShopUpgradeId.MultiStrike => T("shop.multi_strike"),
+                ShopUpgradeId.CriticalChance => T("shop.critical_chance"),
                 _ => id.ToString()
             };
         }
@@ -182,6 +200,7 @@ namespace KnightRun
                 ShopUpgradeId.BaseDamage => "shop.base_damage.desc",
                 ShopUpgradeId.Healing => "shop.healing.desc",
                 ShopUpgradeId.MultiStrike => "shop.multi_strike.desc",
+                ShopUpgradeId.CriticalChance => "shop.critical_chance.desc",
                 _ => string.Empty
             };
 

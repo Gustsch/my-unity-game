@@ -38,6 +38,7 @@ namespace KnightRun.Meta
                 ShopUpgradeId.BaseDamage => 120 + level * 112,
                 ShopUpgradeId.Healing => 130 + level * 126,
                 ShopUpgradeId.MultiStrike => 255 + level * 137,
+                ShopUpgradeId.CriticalChance => 145 + level * 128,
                 _ => 50
             };
         }

@@ -14,9 +14,6 @@ namespace KnightRun.Gameplay
         const float BaseHitDepth = 0.9f;
         const float HitboxHeight = 8f;
 
-        static readonly Vector3 ShaftBaseScale = new Vector3(0.07f, 0.07f, 0.55f);
-        static readonly Vector3 TipBaseScale = new Vector3(0.09f, 0.09f, 0.14f);
-
         Vector3 startPosition;
         float damage;
         float areaMultiplier;
@@ -34,21 +31,12 @@ namespace KnightRun.Gameplay
             go.transform.position = position;
             go.transform.rotation = Quaternion.identity;
 
-            var shaft = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            shaft.name = "Shaft";
-            shaft.transform.SetParent(go.transform, false);
-            shaft.transform.localScale = ShaftBaseScale * areaMultiplier;
-            shaft.transform.localPosition = new Vector3(0f, 0f, 0.28f * areaMultiplier);
-            shaft.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.LogObstacle);
-            Object.Destroy(shaft.GetComponent<Collider>());
-
-            var tip = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            tip.name = "Tip";
-            tip.transform.SetParent(go.transform, false);
-            tip.transform.localScale = TipBaseScale * areaMultiplier;
-            tip.transform.localPosition = new Vector3(0f, 0f, 0.62f * areaMultiplier);
-            tip.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.KnightSword);
-            Object.Destroy(tip.GetComponent<Collider>());
+            WeaponAssetVisual.Create(
+                pierceExtraHits > 0 ? "ArrowPiercing" : "Arrow",
+                go.transform,
+                0.8f * areaMultiplier,
+                Quaternion.Euler(90f, 0f, 0f),
+                new Vector3(0f, 0f, 0.4f * areaMultiplier));
 
             var arrow = go.AddComponent<ArrowProjectile>();
             arrow.startPosition = position;

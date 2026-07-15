@@ -20,6 +20,8 @@ namespace KnightRun.World
         const float BatSpawnChanceInCave = 0.18f;
         const int MinForestObstaclesPerSegment = 1;
         const int MaxForestObstaclesPerSegment = 3;
+        const int MinCaveRocksPerSegment = 1;
+        const int MaxCaveRocksPerSegment = 3;
         const int MinHolesPerMineSegment = 1;
         const int MaxHolesPerMineSegment = 2;
         const float VolcanoTrenchSpawnChanceMultiplier = 0.45f;
@@ -169,6 +171,12 @@ namespace KnightRun.World
                 return;
             }
 
+            if (settings.phase == RunPhase.Cave)
+            {
+                SpawnCaveRockObstacles(segment, settings);
+                return;
+            }
+
             if (settings.phase == RunPhase.MineCart)
             {
                 SpawnMineHoles(segment, settings);
@@ -206,6 +214,32 @@ namespace KnightRun.World
                     segment.transform,
                     new Vector3(spawnX, 0f, spawnZ),
                     obstaclePrefab);
+            }
+        }
+
+        void SpawnCaveRockObstacles(TrackSegment segment, RunPhaseSettings settings)
+        {
+            if (Random.value > settings.obstacleChance)
+                return;
+
+            SimpleNatureCatalog catalog = SimpleNatureCatalog.Instance;
+            if (catalog == null)
+                return;
+
+            int obstacleCount = Random.Range(MinCaveRocksPerSegment, MaxCaveRocksPerSegment + 1);
+            for (int i = 0; i < obstacleCount; i++)
+            {
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
+
+                GameObject rockPrefab = catalog.GetRandomRock();
+                if (rockPrefab == null)
+                    continue;
+
+                PathTreeObstacle.Spawn(
+                    segment.transform,
+                    new Vector3(GetSpawnX(settings), 0f, spawnZ),
+                    rockPrefab);
             }
         }
 
