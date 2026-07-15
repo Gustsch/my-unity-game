@@ -13,6 +13,7 @@ namespace KnightRun.World
         Transform rightWall;
         Transform ground;
         Transform decorRoot;
+        Transform forestDecorRoot;
         RunPhaseSettings currentSettings;
         bool phaseTransitionActive;
         bool transitionMaterialsSwapped;
@@ -37,12 +38,16 @@ namespace KnightRun.World
             ground.gameObject.tag = "Ground";
             leftWall = CreateBox("LeftWall", new Vector3(PhaseTrackLayout.WallThickness, 3f, Length), new Vector3(PhaseTrackLayout.GetWallCenterX(settings, -1), 1.5f, Length * 0.5f), wallMat, keepCollider: true);
             rightWall = CreateBox("RightWall", new Vector3(PhaseTrackLayout.WallThickness, 3f, Length), new Vector3(PhaseTrackLayout.GetWallCenterX(settings, 1), 1.5f, Length * 0.5f), wallMat, keepCollider: true);
+            SetWallRenderersVisible(settings.phase != RunPhase.Forest);
 
             decorRoot = new GameObject("Decor").transform;
             decorRoot.SetParent(transform, false);
 
             switch (settings.phase)
             {
+                case RunPhase.Forest:
+                    BuildForestDecor();
+                    break;
                 case RunPhase.Cave:
                     BuildCaveDecor();
                     break;
@@ -52,6 +57,92 @@ namespace KnightRun.World
                 case RunPhase.Volcano:
                     BuildVolcanoDecor();
                     break;
+            }
+        }
+
+        void BuildForestDecor()
+        {
+            SimpleNatureCatalog catalog = SimpleNatureCatalog.Instance;
+            if (catalog == null)
+            {
+                Debug.LogWarning($"Simple Nature catalog not found at Resources/{SimpleNatureCatalog.ResourcePath}.");
+                return;
+            }
+
+            forestDecorRoot = new GameObject("ForestNature").transform;
+            forestDecorRoot.SetParent(decorRoot, false);
+
+            const int wallTreeRows = 2;
+            const int wallTreesPerRow = 10;
+            float wallX = PhaseTrackLayout.GetWallCenterX(currentSettings, 1);
+            float treeSpacing = Length / wallTreesPerRow;
+            int segmentIndex = Mathf.RoundToInt(transform.position.z / Length);
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                for (int row = 0; row < wallTreeRows; row++)
+                {
+                    for (int i = 0; i < wallTreesPerRow; i++)
+                    {
+                        int sideOffset = side < 0 ? 0 : wallTreesPerRow * wallTreeRows;
+                        int variantIndex = segmentIndex + sideOffset + row * wallTreesPerRow + i;
+                        GameObject prefab = catalog.GetWall(variantIndex);
+                        GameObject tree = SimpleNatureCatalog.InstantiateVisual(prefab, forestDecorRoot);
+                        if (tree == null)
+                            continue;
+
+                        float scale = Random.Range(1f, 1.3f);
+                        float stagger = row * treeSpacing * 0.5f;
+                        tree.name = $"Wall_{prefab.name}";
+                        tree.transform.localPosition = new Vector3(
+                            side * (wallX + 0.3f + row * 1.25f + Random.Range(-0.15f, 0.15f)),
+                            0f,
+                            Mathf.Repeat((i + 0.5f) * treeSpacing + stagger, Length));
+                        tree.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+                        tree.transform.localScale = Vector3.one * scale;
+                    }
+                }
+            }
+
+            const int bushesPerSide = 10;
+            float playableEdgeX = PhaseTrackLayout.GetPlayableMaxX(currentSettings);
+            float bushSpacing = Length / bushesPerSide;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                for (int i = 0; i < bushesPerSide; i++)
+                {
+                    int sideOffset = side < 0 ? 0 : bushesPerSide;
+                    GameObject prefab = catalog.GetBushBarrier(segmentIndex + sideOffset + i);
+                    GameObject bush = SimpleNatureCatalog.InstantiateVisual(prefab, forestDecorRoot);
+                    if (bush == null)
+                        continue;
+
+                    bush.name = $"BushWall_{prefab.name}";
+                    bush.transform.localPosition = new Vector3(
+                        side * (wallX - 0.35f + Random.Range(-0.12f, 0.12f)),
+                        0f,
+                        (i + 0.5f) * bushSpacing + Random.Range(-0.35f, 0.35f));
+                    bush.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+                    bush.transform.localScale = Vector3.one * Random.Range(0.9f, 1.25f);
+                }
+            }
+
+            const int decorationCount = 12;
+            for (int i = 0; i < decorationCount; i++)
+            {
+                GameObject prefab = catalog.GetDecoration(segmentIndex * decorationCount + i);
+                GameObject decoration = SimpleNatureCatalog.InstantiateVisual(prefab, forestDecorRoot);
+                if (decoration == null)
+                    continue;
+
+                float scale = Random.Range(0.8f, 1.35f);
+                decoration.name = $"Decor_{prefab.name}";
+                decoration.transform.localPosition = new Vector3(
+                    Random.Range(-playableEdgeX + 0.35f, playableEdgeX - 0.35f),
+                    0f,
+                    Random.Range(0.5f, Length - 0.5f));
+                decoration.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+                decoration.transform.localScale = Vector3.one * scale;
             }
         }
 
@@ -155,6 +246,8 @@ namespace KnightRun.World
             SetMaterial(ground, groundMat);
             SetMaterial(leftWall, wallMat);
             SetMaterial(rightWall, wallMat);
+            SetWallRenderersVisible(settings.phase != RunPhase.Forest);
+            SetForestDecorVisible(settings.phase == RunPhase.Forest);
         }
 
         public void BeginPhaseTransition(RunPhaseSettings settings, float duration)
@@ -247,6 +340,8 @@ namespace KnightRun.World
                 SetMaterial(ground, transitionGroundMaterial);
                 SetMaterial(leftWall, transitionWallMaterial);
                 SetMaterial(rightWall, transitionWallMaterial);
+                SetWallRenderersVisible(currentSettings.phase != RunPhase.Forest);
+                SetForestDecorVisible(currentSettings.phase == RunPhase.Forest);
             }
 
             float brightness = progress < 0.5f
@@ -305,6 +400,28 @@ namespace KnightRun.World
             var renderer = target.GetComponent<Renderer>();
             if (renderer != null)
                 renderer.sharedMaterial = material;
+        }
+
+        void SetWallRenderersVisible(bool visible)
+        {
+            SetRendererVisible(leftWall, visible);
+            SetRendererVisible(rightWall, visible);
+        }
+
+        void SetForestDecorVisible(bool visible)
+        {
+            if (forestDecorRoot != null)
+                forestDecorRoot.gameObject.SetActive(visible);
+        }
+
+        static void SetRendererVisible(Transform target, bool visible)
+        {
+            if (target == null)
+                return;
+
+            Renderer renderer = target.GetComponent<Renderer>();
+            if (renderer != null)
+                renderer.enabled = visible;
         }
     }
 }

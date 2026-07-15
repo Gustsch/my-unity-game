@@ -18,8 +18,8 @@ namespace KnightRun.World
         const float ContinuousSpawnMinAhead = 34f;
         const float ContinuousSpawnMaxAhead = 52f;
         const float BatSpawnChanceInCave = 0.18f;
-        const int MinTreesPerForestSegment = 1;
-        const int MaxTreesPerForestSegment = 3;
+        const int MinForestObstaclesPerSegment = 1;
+        const int MaxForestObstaclesPerSegment = 3;
         const int MinHolesPerMineSegment = 1;
         const int MaxHolesPerMineSegment = 2;
         const float VolcanoTrenchSpawnChanceMultiplier = 0.45f;
@@ -165,7 +165,7 @@ namespace KnightRun.World
         {
             if (settings.phase == RunPhase.Forest)
             {
-                SpawnForestTrees(segment, settings);
+                SpawnForestObstacles(segment, settings);
                 return;
             }
 
@@ -185,19 +185,27 @@ namespace KnightRun.World
                 SpawnIceStalactites(segment, settings);
         }
 
-        void SpawnForestTrees(TrackSegment segment, RunPhaseSettings settings)
+        void SpawnForestObstacles(TrackSegment segment, RunPhaseSettings settings)
         {
             if (Random.value > settings.obstacleChance)
                 return;
 
-            int treeCount = Random.Range(MinTreesPerForestSegment, MaxTreesPerForestSegment + 1);
-            for (int i = 0; i < treeCount; i++)
+            SimpleNatureCatalog catalog = SimpleNatureCatalog.Instance;
+            if (catalog == null)
+                return;
+
+            int obstacleCount = Random.Range(MinForestObstaclesPerSegment, MaxForestObstaclesPerSegment + 1);
+            for (int i = 0; i < obstacleCount; i++)
             {
                 if (!TryRollEnemySpawnZ(segment, out float spawnZ))
                     break;
 
                 float spawnX = GetSpawnX(settings);
-                PathTreeObstacle.Spawn(transform, new Vector3(spawnX, 0f, spawnZ));
+                GameObject obstaclePrefab = catalog.GetRandomObstacle();
+                PathTreeObstacle.Spawn(
+                    segment.transform,
+                    new Vector3(spawnX, 0f, spawnZ),
+                    obstaclePrefab);
             }
         }
 

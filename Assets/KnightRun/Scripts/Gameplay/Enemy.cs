@@ -38,6 +38,7 @@ namespace KnightRun.Gameplay
         static readonly Color FrozenTint = new Color(0.55f, 0.82f, 1f);
         const string GoblinVisualResourcesPath = "KnightRun/Enemies";
         const string SkeletonVisualResourcePath = "KnightRun/Skeletons/skeleton";
+        const string SkeletonWalkAnimatorPath = "KnightRun/Skeletons/walk";
         const string SkeletonDeathAnimatorPath = "KnightRun/Skeletons/death";
         const string SkeletonIdleAnimatorPath = "KnightRun/Skeletons/skeleton_idle";
         const string SkeletonAnimationStateName = "anim";
@@ -68,6 +69,7 @@ namespace KnightRun.Gameplay
         static bool goblinVisualLoadAttempted;
         static GameObject skeletonVisualPrefab;
         static bool skeletonVisualLoadAttempted;
+        static RuntimeAnimatorController skeletonWalkControllerAsset;
         static RuntimeAnimatorController skeletonDeathController;
         static RuntimeAnimatorController skeletonIdleController;
         static bool skeletonAnimatorLoadAttempted;
@@ -169,9 +171,12 @@ namespace KnightRun.Gameplay
                 return;
 
             skeletonAnimatorLoadAttempted = true;
+            skeletonWalkControllerAsset = Resources.Load<RuntimeAnimatorController>(SkeletonWalkAnimatorPath);
             skeletonDeathController = Resources.Load<RuntimeAnimatorController>(SkeletonDeathAnimatorPath);
             skeletonIdleController = Resources.Load<RuntimeAnimatorController>(SkeletonIdleAnimatorPath);
 
+            if (skeletonWalkControllerAsset == null)
+                Debug.LogWarning($"Skeleton walk animator not found at Resources/{SkeletonWalkAnimatorPath}.");
             if (skeletonDeathController == null)
                 Debug.LogWarning($"Skeleton death animator not found at Resources/{SkeletonDeathAnimatorPath}.");
         }
@@ -183,8 +188,11 @@ namespace KnightRun.Gameplay
                 return;
 
             skeletonAnimator.applyRootMotion = false;
-            skeletonWalkController = skeletonAnimator.runtimeAnimatorController;
             LoadSkeletonAnimators();
+            skeletonWalkController = skeletonWalkControllerAsset != null
+                ? skeletonWalkControllerAsset
+                : skeletonAnimator.runtimeAnimatorController;
+            skeletonAnimator.runtimeAnimatorController = skeletonWalkController;
             skeletonAnimator.Play(SkeletonAnimationStateName, 0, 0f);
         }
 
