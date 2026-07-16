@@ -11,7 +11,7 @@ namespace KnightRun.Editor
     {
         const string CatalogPath = "Assets/KnightRun/Resources/KnightRun/LowPolyBiomeCatalog.asset";
         const string PrefsKey = "KnightRun.LowPolyBiomeCatalog.BuildVersion";
-        const int BuildVersion = 6;
+        const int BuildVersion = 7;
 
         static readonly string EnvRoot = "Assets/3D Enivronment Assets/Prefabs";
         static readonly string DesertPackRoot = "Assets/Free Low Poly Desert Pack/Unity Prefabs";
@@ -113,10 +113,10 @@ namespace KnightRun.Editor
                 rockPrefabs = Combine(
                     LoadMany($"{EnvRoot}/DesertPrefabs", "DesertRock_01", "DesertRock_02", "DesertRock_03"),
                     LoadMany($"{DesertPackRoot}/Rocks", "Mixed_Rock_01", "Flat_Rock_01")),
-                decorationPrefabs = new GameObject[0],
+                decorationPrefabs = LoadMany($"{EnvRoot}/DesertPrefabs", "DesertGrass_01", "DesertGrass_02"),
                 obstaclePrefabs = Combine(
-                    LoadMany($"{EnvRoot}/DesertPrefabs", "Cactus_01", "Cactus_02", "Cactus_03", "Cactus_04", "DesertTree", "DesertGrass_01", "DesertGrass_02"),
-                    LoadMany($"{DesertPackRoot}/Plants", "Mixed_Cactus_01", "Mixed_Cactus_02", "Flat_Cactus_01", "Flat_Cactus_02", "Mixed_Plant_02", "Flat_Plant_02"),
+                    LoadMany($"{EnvRoot}/DesertPrefabs", "Cactus_01", "Cactus_02", "Cactus_03", "Cactus_04", "DesertTree"),
+                    LoadMany($"{DesertPackRoot}/Plants", "Mixed_Cactus_01", "Mixed_Cactus_02", "Flat_Cactus_01", "Flat_Cactus_02"),
                     LoadMany($"{DesertPackRoot}/Trees", "Mixed_Palm_tree_01", "Flat_Palm_tree_01", "Mixed_Tree_02", "Flat_Tree_02")),
                 replaceGround = false,
                 replaceWalls = true,

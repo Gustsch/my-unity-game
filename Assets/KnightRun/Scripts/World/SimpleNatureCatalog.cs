@@ -108,10 +108,13 @@ namespace KnightRun.World
             return prefab != null ? prefab : null;
         }
 
+        const string UrpVertexColorShaderName = "KnightRun/URP Vertex Color Unlit";
+
         static void EnsureUrpMaterials(GameObject visual)
         {
-            Shader urpShader = Shader.Find("Universal Render Pipeline/Lit");
-            if (urpShader == null)
+            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
+            Shader urpVertexColor = Shader.Find(UrpVertexColorShaderName);
+            if (urpLit == null)
                 return;
 
             foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true))
@@ -122,17 +125,56 @@ namespace KnightRun.World
                 for (int i = 0; i < materials.Length; i++)
                 {
                     Material source = materials[i];
-                    if (source == null || source.shader == urpShader)
+                    if (source == null)
+                        continue;
+
+                    if (IsVertexColorShader(source.shader))
+                    {
+                        if (urpVertexColor == null || source.shader == urpVertexColor)
+                            continue;
+
+                        if (!urpMaterials.TryGetValue(source, out Material vertexConverted))
+                        {
+                            vertexConverted = CreateVertexColorMaterial(source, urpVertexColor);
+                            urpMaterials.Add(source, vertexConverted);
+                        }
+
+                        materials[i] = vertexConverted;
+                        changed = true;
+                        continue;
+                    }
+
+                    if (!NeedsBuiltInToUrpConversion(source, urpLit))
                         continue;
 
                     if (!urpMaterials.TryGetValue(source, out Material converted))
                     {
-                        converted = new Material(urpShader)
+                        converted = new Material(urpLit)
                         {
-                            name = source.name + "_URP_Runtime",
-                            color = source.HasProperty("_Color") ? source.color : Color.white,
-                            mainTexture = source.mainTexture
+                            name = source.name + "_URP_Runtime"
                         };
+
+                        Color color = source.HasProperty("_BaseColor")
+                            ? source.GetColor("_BaseColor")
+                            : source.HasProperty("_Color")
+                                ? source.GetColor("_Color")
+                                : Color.white;
+                        if (converted.HasProperty("_BaseColor"))
+                            converted.SetColor("_BaseColor", color);
+                        converted.color = color;
+
+                        Texture mainTex = null;
+                        if (source.HasProperty("_BaseMap"))
+                            mainTex = source.GetTexture("_BaseMap");
+                        if (mainTex == null)
+                            mainTex = source.mainTexture;
+                        if (mainTex != null)
+                        {
+                            if (converted.HasProperty("_BaseMap"))
+                                converted.SetTexture("_BaseMap", mainTex);
+                            converted.mainTexture = mainTex;
+                        }
+
                         urpMaterials.Add(source, converted);
                     }
 
@@ -143,6 +185,65 @@ namespace KnightRun.World
                 if (changed)
                     renderer.sharedMaterials = materials;
             }
+        }
+
+        static Material CreateVertexColorMaterial(Material source, Shader urpVertexColor)
+        {
+            Color tint = Color.white;
+            if (source.HasProperty("_BaseColor"))
+                tint = source.GetColor("_BaseColor");
+            else if (source.HasProperty("_Color"))
+                tint = source.GetColor("_Color");
+
+            Material converted = new Material(urpVertexColor)
+            {
+                name = source.name + "_URP_VertexColor"
+            };
+            if (converted.HasProperty("_BaseColor"))
+                converted.SetColor("_BaseColor", tint);
+            if (converted.HasProperty("_Color"))
+                converted.SetColor("_Color", tint);
+            return converted;
+        }
+
+        static bool IsVertexColorShader(Shader shader)
+        {
+            if (shader == null)
+                return false;
+
+            string shaderName = shader.name;
+            if (string.IsNullOrEmpty(shaderName))
+                return false;
+
+            return shaderName.IndexOf("Vertex_Color", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || shaderName.IndexOf("Vertex Color", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || shaderName.IndexOf("VertexColor", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || shaderName == UrpVertexColorShaderName;
+        }
+
+        static bool NeedsBuiltInToUrpConversion(Material source, Shader urpLit)
+        {
+            if (source.shader == null)
+                return true;
+
+            if (source.shader == urpLit)
+                return false;
+
+            string shaderName = source.shader.name;
+            if (string.IsNullOrEmpty(shaderName))
+                return true;
+
+            if (shaderName.StartsWith("Universal Render Pipeline/", System.StringComparison.Ordinal))
+                return false;
+            if (shaderName.StartsWith("KnightRun/", System.StringComparison.Ordinal))
+                return false;
+            if (IsVertexColorShader(source.shader))
+                return false;
+
+            return shaderName == "Standard"
+                || shaderName == "Standard (Specular setup)"
+                || shaderName.StartsWith("Legacy Shaders/", System.StringComparison.Ordinal)
+                || shaderName.StartsWith("Hidden/InternalErrorShader", System.StringComparison.Ordinal);
         }
     }
 }

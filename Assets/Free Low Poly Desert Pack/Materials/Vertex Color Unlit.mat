@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Vertex Color Unlit
-  m_Shader: {fileID: 4800000, guid: 00a6eaa36044a3f4ea77da5c0bc479c8, type: 3}
+  m_Shader: {fileID: 4800000, guid: 9c4e2a7b1f8d4e6a9b3c5d7e0f1a2b3c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -74,6 +74,7 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []

@@ -135,6 +135,37 @@ namespace KnightRun.World
 
             if (currentSettings.phase != RunPhase.Desert)
                 SpawnBiomeDecorations(catalog, set, segmentIndex, playableEdgeX);
+            else
+                SpawnDesertGrassDecor(catalog, set, segmentIndex, playableEdgeX);
+        }
+
+        void SpawnDesertGrassDecor(
+            LowPolyBiomeCatalog catalog,
+            LowPolyBiomeCatalog.BiomeSet set,
+            int segmentIndex,
+            float playableEdgeX)
+        {
+            if (set.decorationPrefabs == null || set.decorationPrefabs.Length == 0)
+                return;
+
+            const int grassCount = 6;
+            float wallX = PhaseTrackLayout.GetWallCenterX(currentSettings, 1);
+            for (int i = 0; i < grassCount; i++)
+            {
+                GameObject prefab = catalog.GetDecoration(set, segmentIndex * grassCount + i);
+                GameObject grass = PrefabVisualUtility.InstantiateVisual(prefab, biomeDecorRoot);
+                if (grass == null)
+                    continue;
+
+                float side = Random.value < 0.5f ? -1f : 1f;
+                grass.name = $"Grass_{prefab.name}";
+                grass.transform.localPosition = new Vector3(
+                    side * Random.Range(playableEdgeX * 0.45f, wallX - 0.4f),
+                    0f,
+                    Random.Range(0.5f, Length - 0.5f));
+                grass.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+                PrefabVisualUtility.FitHeight(grass, Random.Range(0.45f, 0.85f), maxWidth: 1.2f);
+            }
         }
 
         void SpawnGroundTiles(
