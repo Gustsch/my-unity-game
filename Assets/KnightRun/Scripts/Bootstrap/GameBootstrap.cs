@@ -144,6 +144,29 @@ namespace KnightRun
         {
             HideRootObject("Plane");
             HideRootObject("Cube");
+            HideRootObject("Ground");
+
+            // Hide demo props dumped into SampleScene from environment packs.
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (!scene.IsValid())
+                return;
+
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                if (root == null || ShouldKeepSceneRoot(root.name))
+                    continue;
+
+                root.SetActive(false);
+            }
+        }
+
+        static bool ShouldKeepSceneRoot(string objectName)
+        {
+            return objectName is "Main Camera"
+                or "Directional Light"
+                or "Global Volume"
+                or "EventSystem"
+                or "KnightRun_Root";
         }
 
         static void HideRootObject(string objectName)

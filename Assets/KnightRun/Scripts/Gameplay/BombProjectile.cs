@@ -88,6 +88,10 @@ namespace KnightRun.Gameplay
                 CombatTarget.TryApplyDamage(hit, damage);
             }
 
+            BombExplosionEffect.Play(
+                new Vector3(landPosition.x, 0f, landPosition.z),
+                explosionRadius);
+
             Destroy(gameObject);
         }
     }

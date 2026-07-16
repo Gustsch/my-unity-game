@@ -231,7 +231,8 @@ namespace KnightRun.Gameplay
                     BossFreezeRayAttack.Spawn(transform, player);
                     break;
                 case RunPhase.Desert:
-                    BossSandstormAttack.Spawn(player);
+                    // Phase storm already runs for the whole desert — keep it going.
+                    BossSandstormAttack.EnsurePhaseStorm(player);
                     break;
             }
         }

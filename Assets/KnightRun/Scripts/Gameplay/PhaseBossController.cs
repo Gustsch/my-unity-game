@@ -129,9 +129,7 @@ namespace KnightRun.Gameplay
             foreach (BossFreezeRayAttack attack in FindObjectsByType<BossFreezeRayAttack>(FindObjectsSortMode.None))
                 Destroy(attack.gameObject);
 
-            foreach (BossSandstormAttack attack in FindObjectsByType<BossSandstormAttack>(FindObjectsSortMode.None))
-                Destroy(attack.gameObject);
-
+            // Keep the desert phase sandstorm running; only clear temporary spines.
             foreach (BossDesertSpine spine in FindObjectsByType<BossDesertSpine>(FindObjectsSortMode.None))
                 Destroy(spine.gameObject);
 

@@ -16,8 +16,9 @@ namespace KnightRun.Gameplay
         const float ActiveDuration = 1.8f;
         const float RiseTriggerDistance = 11f;
         const float ColumnRadius = 0.85f;
-        const float ColumnHeight = 3.4f;
-        const float BaseMarkHeight = 0.08f;
+        const float WarningHeight = 0.75f;
+        const float ColumnHeight = 4.6f;
+        const float WarningMarkHeight = 0.1f;
 
         enum Phase
         {
@@ -51,29 +52,27 @@ namespace KnightRun.Gameplay
             var mark = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             mark.name = "WarningMark";
             mark.transform.SetParent(transform, false);
-            mark.transform.localScale = new Vector3(ColumnRadius * 2.2f, BaseMarkHeight, ColumnRadius * 2.2f);
-            mark.transform.localPosition = new Vector3(0f, BaseMarkHeight, 0f);
+            mark.transform.localScale = new Vector3(ColumnRadius * 2.6f, WarningMarkHeight, ColumnRadius * 2.6f);
+            mark.transform.localPosition = new Vector3(0f, WarningMarkHeight, 0f);
             mark.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.LavaPool);
+            ApplyTint(mark.GetComponent<Renderer>(), new Color(1f, 0.4f, 0.05f));
             Object.Destroy(mark.GetComponent<Collider>());
             warningMark = mark.transform;
 
             var column = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             column.name = "Flame";
             column.transform.SetParent(transform, false);
-            column.transform.localScale = new Vector3(ColumnRadius * 1.6f, 0.01f, ColumnRadius * 1.6f);
-            column.transform.localPosition = new Vector3(0f, 0.01f, 0f);
             column.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.LavaPool);
             ApplyTint(column.GetComponent<Renderer>(), new Color(1f, 0.35f, 0.05f));
             Object.Destroy(column.GetComponent<Collider>());
             columnVisual = column.transform;
-            columnVisual.gameObject.SetActive(false);
 
             hitbox = gameObject.AddComponent<BoxCollider>();
             hitbox.isTrigger = true;
             hitbox.enabled = false;
-            hitbox.size = new Vector3(ColumnRadius * 1.7f, 0.2f, ColumnRadius * 1.7f);
-            hitbox.center = new Vector3(0f, 0.1f, 0f);
 
+            // Preview lava already peeking out of the trench.
+            ApplyColumnHeight(WarningHeight);
             phase = Phase.Warning;
         }
 
@@ -129,7 +128,7 @@ namespace KnightRun.Gameplay
                 case Phase.Rising:
                     phaseTimer -= Time.deltaTime;
                     float riseProgress = 1f - Mathf.Clamp01(phaseTimer / RiseDuration);
-                    ApplyColumnHeight(Mathf.Lerp(0.05f, ColumnHeight, riseProgress));
+                    ApplyColumnHeight(Mathf.Lerp(WarningHeight, ColumnHeight, riseProgress));
                     if (phaseTimer <= 0f)
                     {
                         phase = Phase.Active;
@@ -151,8 +150,8 @@ namespace KnightRun.Gameplay
         {
             phase = Phase.Rising;
             phaseTimer = RiseDuration;
-            if (columnVisual != null)
-                columnVisual.gameObject.SetActive(true);
+            if (warningMark != null)
+                warningMark.gameObject.SetActive(false);
             if (hitbox != null)
                 hitbox.enabled = true;
         }
@@ -166,7 +165,7 @@ namespace KnightRun.Gameplay
                 columnVisual.localPosition = new Vector3(0f, height * 0.5f, 0f);
             }
 
-            if (hitbox != null)
+            if (hitbox != null && hitbox.enabled)
             {
                 hitbox.size = new Vector3(ColumnRadius * 1.7f, height, ColumnRadius * 1.7f);
                 hitbox.center = new Vector3(0f, height * 0.5f, 0f);
@@ -175,18 +174,25 @@ namespace KnightRun.Gameplay
 
         void AnimateWarning()
         {
-            if (warningMark == null || phase != Phase.Warning)
+            if (phase != Phase.Warning)
                 return;
 
-            float pulse = 1f + Mathf.Sin(Time.time * 8f) * 0.18f;
-            warningMark.localScale = new Vector3(ColumnRadius * 2.2f * pulse, BaseMarkHeight, ColumnRadius * 2.2f * pulse);
+            float bob = WarningHeight * (0.85f + Mathf.Sin(Time.time * 6f) * 0.18f);
+            ApplyColumnHeight(bob);
+
+            if (warningMark == null)
+                return;
+
+            float pulse = 1f + Mathf.Sin(Time.time * 7f) * 0.2f;
+            float radius = ColumnRadius * 2.6f * pulse;
+            warningMark.localScale = new Vector3(radius, WarningMarkHeight, radius);
 
             var renderer = warningMark.GetComponent<Renderer>();
             if (renderer == null)
                 return;
 
-            float glow = 0.55f + Mathf.Sin(Time.time * 10f) * 0.35f;
-            Color color = new Color(1f, 0.25f + glow * 0.2f, 0.05f, 1f);
+            float glow = 0.55f + Mathf.Sin(Time.time * 9f) * 0.35f;
+            Color color = new Color(1f, 0.3f + glow * 0.2f, 0.05f, 1f);
             Material material = renderer.material;
             material.color = color;
             if (material.HasProperty("_BaseColor"))
@@ -195,7 +201,7 @@ namespace KnightRun.Gameplay
 
         void AnimateFlame()
         {
-            if (columnVisual == null || !columnVisual.gameObject.activeSelf || phase == Phase.Warning)
+            if (columnVisual == null || phase == Phase.Warning)
                 return;
 
             float pulse = 1f + Mathf.Sin(Time.time * 18f) * 0.08f;

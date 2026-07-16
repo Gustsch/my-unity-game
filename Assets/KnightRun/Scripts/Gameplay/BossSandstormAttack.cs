@@ -11,6 +11,9 @@ namespace KnightRun.Gameplay
         public const float SpineWarning = 0.9f;
         public const int SpineDamage = 300;
         public const int SpineCount = 3;
+        public const float PhaseSpineInterval = 1.35f;
+
+        public bool IsPhaseStorm { get; private set; }
 
         Transform player;
         GameManager gameManager;
@@ -26,16 +29,44 @@ namespace KnightRun.Gameplay
             go.transform.position = player.position;
 
             var attack = go.AddComponent<BossSandstormAttack>();
-            attack.Build(player);
+            attack.Build(player, phaseStorm: false);
             return attack;
         }
 
-        void Build(Transform playerTransform)
+        public static BossSandstormAttack EnsurePhaseStorm(Transform player)
+        {
+            BossSandstormAttack existing = FindFirstObjectByType<BossSandstormAttack>();
+            if (existing != null)
+            {
+                existing.MakePhaseStorm(player);
+                return existing;
+            }
+
+            var go = new GameObject("DesertSandstorm");
+            go.transform.position = player.position;
+
+            var attack = go.AddComponent<BossSandstormAttack>();
+            attack.Build(player, phaseStorm: true);
+            return attack;
+        }
+
+        public static void StopPhaseStorm()
+        {
+            foreach (BossSandstormAttack attack in FindObjectsByType<BossSandstormAttack>(FindObjectsSortMode.None))
+            {
+                if (attack != null)
+                    Object.Destroy(attack.gameObject);
+            }
+        }
+
+        void Build(Transform playerTransform, bool phaseStorm)
         {
             player = playerTransform;
+            IsPhaseStorm = phaseStorm;
             lockedX = player.position.x;
-            lifeTimer = StormDuration;
-            spineTimer = SpineWarning;
+            lifeTimer = phaseStorm ? float.PositiveInfinity : StormDuration;
+            spineTimer = phaseStorm ? PhaseSpineInterval * 0.5f : SpineWarning;
+            spinesSpawned = 0;
             fogPanels = new Transform[4];
 
             for (int i = 0; i < fogPanels.Length; i++)
@@ -49,6 +80,17 @@ namespace KnightRun.Gameplay
                 Object.Destroy(panel.GetComponent<Collider>());
                 fogPanels[i] = panel.transform;
             }
+        }
+
+        void MakePhaseStorm(Transform playerTransform)
+        {
+            if (playerTransform != null)
+                player = playerTransform;
+
+            IsPhaseStorm = true;
+            lifeTimer = float.PositiveInfinity;
+            if (spineTimer <= 0f)
+                spineTimer = PhaseSpineInterval;
         }
 
         static void ApplyTint(Renderer renderer, Color color)
@@ -87,6 +129,9 @@ namespace KnightRun.Gameplay
             UpdateFog();
             UpdateSpines();
 
+            if (IsPhaseStorm)
+                return;
+
             lifeTimer -= Time.deltaTime;
             if (lifeTimer <= 0f)
                 Destroy(gameObject);
@@ -107,7 +152,7 @@ namespace KnightRun.Gameplay
 
         void UpdateSpines()
         {
-            if (spinesSpawned >= SpineCount)
+            if (!IsPhaseStorm && spinesSpawned >= SpineCount)
                 return;
 
             spineTimer -= Time.deltaTime;
@@ -115,9 +160,11 @@ namespace KnightRun.Gameplay
                 return;
 
             SpawnSpine(lockedX);
-            spinesSpawned++;
+            if (!IsPhaseStorm)
+                spinesSpawned++;
+
             lockedX = player.position.x;
-            spineTimer = SpineWarning;
+            spineTimer = IsPhaseStorm ? PhaseSpineInterval : SpineWarning;
         }
 
         void SpawnSpine(float targetX)

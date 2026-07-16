@@ -29,10 +29,8 @@ namespace KnightRun.Gameplay
             trench.trenchWidth = PhaseTrackLayout.GetGroundWidth(settings) - 0.4f;
             trench.BuildVisual();
 
-            float fireX = Random.Range(
-                PhaseTrackLayout.GetPlayableMinX(settings),
-                PhaseTrackLayout.GetPlayableMaxX(settings));
-            FireColumnHazard.Spawn(go.transform, new Vector3(fireX, 0f, z));
+            // One fire column centered on the trench — peeks as warning, then erupts up close.
+            FireColumnHazard.Spawn(go.transform, new Vector3(0f, 0f, z));
             return trench;
         }
 

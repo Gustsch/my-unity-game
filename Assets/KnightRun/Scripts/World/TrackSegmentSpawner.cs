@@ -24,9 +24,11 @@ namespace KnightRun.World
         const int MaxCaveRocksPerSegment = 3;
         const int MinHolesPerMineSegment = 1;
         const int MaxHolesPerMineSegment = 2;
-        const float VolcanoTrenchSpawnChanceMultiplier = 0.45f;
+        const float VolcanoTrenchSpawnChanceMultiplier = 0.9f;
         const int MinStalactitesPerIceSegment = 1;
         const int MaxStalactitesPerIceSegment = 3;
+        const int MinDesertObstaclesPerSegment = 3;
+        const int MaxDesertObstaclesPerSegment = 6;
         const float PhaseVisualTransitionDuration = 3.5f;
 
         readonly Queue<TrackSegment> activeSegments = new Queue<TrackSegment>();
@@ -190,7 +192,42 @@ namespace KnightRun.World
             }
 
             if (settings.phase == RunPhase.IceCavern)
+            {
                 SpawnIceStalactites(segment, settings);
+                return;
+            }
+
+            if (settings.phase == RunPhase.Desert)
+                SpawnDesertObstacles(segment, settings);
+        }
+
+        void SpawnDesertObstacles(TrackSegment segment, RunPhaseSettings settings)
+        {
+            if (Random.value > settings.obstacleChance)
+                return;
+
+            LowPolyBiomeCatalog catalog = LowPolyBiomeCatalog.Instance;
+            LowPolyBiomeCatalog.BiomeSet set = catalog != null ? catalog.GetSet(RunPhase.Desert) : null;
+            if (set == null || set.obstaclePrefabs == null || set.obstaclePrefabs.Length == 0)
+                return;
+
+            int obstacleCount = Random.Range(MinDesertObstaclesPerSegment, MaxDesertObstaclesPerSegment + 1);
+            for (int i = 0; i < obstacleCount; i++)
+            {
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
+
+                GameObject prefab = catalog.GetRandomObstacle(set);
+                if (prefab == null)
+                    continue;
+
+                PathTreeObstacle.Spawn(
+                    segment.transform,
+                    new Vector3(GetSpawnX(settings), 0f, spawnZ),
+                    prefab,
+                    fitCaveRockSize: false,
+                    fitDesertObstacleSize: true);
+            }
         }
 
         void SpawnForestObstacles(TrackSegment segment, RunPhaseSettings settings)
@@ -267,13 +304,20 @@ namespace KnightRun.World
             if (Random.value > trenchSpawnChance)
                 return;
 
-            if (FindFirstObjectByType<VolcanoTrenchObstacle>() != null)
-                return;
+            // Up to two trenches per segment — each trench owns exactly one fire column.
+            int trenchCount = Random.value < 0.55f ? 2 : 1;
+            float lastTrenchZ = float.NegativeInfinity;
+            for (int i = 0; i < trenchCount; i++)
+            {
+                if (!TryRollEnemySpawnZ(segment, out float spawnZ))
+                    break;
 
-            if (!TryRollEnemySpawnZ(segment, out float spawnZ))
-                return;
+                if (spawnZ - lastTrenchZ < 6f)
+                    continue;
 
-            VolcanoTrenchObstacle.Spawn(transform, spawnZ, settings);
+                VolcanoTrenchObstacle.Spawn(transform, spawnZ, settings);
+                lastTrenchZ = spawnZ;
+            }
         }
 
         void SpawnIceStalactites(TrackSegment segment, RunPhaseSettings settings)
@@ -392,10 +436,24 @@ namespace KnightRun.World
 
         void HandlePhaseChanged(RunPhase phase, RunPhaseSettings settings)
         {
+            // Keep already-built segments as the previous biome until they recycle behind the player.
+            // Only newly spawned segments ahead use the new phase visuals.
             BeginAmbientTransition(settings.ambientColor);
+            UpdateDesertSandstorm(phase);
+        }
 
-            foreach (TrackSegment segment in activeSegments)
-                segment.BeginPhaseTransition(settings, PhaseVisualTransitionDuration);
+        void UpdateDesertSandstorm(RunPhase phase)
+        {
+            if (phase == RunPhase.Desert)
+            {
+                if (player == null)
+                    player = FindFirstObjectByType<RunnerController>();
+                if (player != null)
+                    BossSandstormAttack.EnsurePhaseStorm(player.transform);
+                return;
+            }
+
+            BossSandstormAttack.StopPhaseStorm();
         }
 
         void BeginAmbientTransition(Color targetColor)
@@ -451,6 +509,11 @@ namespace KnightRun.World
 
             foreach (FallingStalactiteHazard stalactite in FindObjectsByType<FallingStalactiteHazard>(FindObjectsSortMode.None))
                 Destroy(stalactite.gameObject);
+
+            BossSandstormAttack.StopPhaseStorm();
+
+            foreach (BossDesertSpine spine in FindObjectsByType<BossDesertSpine>(FindObjectsSortMode.None))
+                Destroy(spine.gameObject);
 
             foreach (Boss boss in FindObjectsByType<Boss>(FindObjectsSortMode.None))
                 Destroy(boss.gameObject);

@@ -32,6 +32,7 @@ namespace KnightRun.World
     public static class KnightRunMaterials
     {
         static readonly Dictionary<KnightRunTexture, Material> Cache = new Dictionary<KnightRunTexture, Material>();
+        static readonly Dictionary<string, Material> PhaseTintCache = new Dictionary<string, Material>();
         static Shader cachedShader;
 
         static readonly Dictionary<KnightRunTexture, string> TexturePaths = new Dictionary<KnightRunTexture, string>
@@ -68,10 +69,10 @@ namespace KnightRun.World
             { KnightRunTexture.GroundForest, new Color(0.22f, 0.45f, 0.18f) },
             { KnightRunTexture.GroundCave, new Color(0.28f, 0.24f, 0.20f) },
             { KnightRunTexture.GroundMine, new Color(0.35f, 0.22f, 0.12f) },
-            { KnightRunTexture.GroundVolcano, new Color(0.28f, 0.10f, 0.06f) },
+            { KnightRunTexture.GroundVolcano, new Color(0.42f, 0.12f, 0.08f) },
             { KnightRunTexture.WallForest, new Color(0.12f, 0.32f, 0.10f) },
             { KnightRunTexture.WallCave, new Color(0.15f, 0.13f, 0.12f) },
-            { KnightRunTexture.WallVolcano, new Color(0.18f, 0.08f, 0.06f) },
+            { KnightRunTexture.WallVolcano, new Color(0.32f, 0.10f, 0.08f) },
             { KnightRunTexture.TreeTrunk, new Color(0.35f, 0.22f, 0.10f) },
             { KnightRunTexture.TreeLeaves, new Color(0.35f, 0.55f, 0.20f) },
             { KnightRunTexture.RockObstacle, new Color(0.45f, 0.45f, 0.48f) },
@@ -80,8 +81,8 @@ namespace KnightRun.World
             { KnightRunTexture.Stalactite, new Color(0.50f, 0.48f, 0.45f) },
             { KnightRunTexture.MineCart, new Color(0.45f, 0.28f, 0.12f) },
             { KnightRunTexture.MineRail, new Color(0.55f, 0.38f, 0.18f) },
-            { KnightRunTexture.LavaPool, new Color(0.95f, 0.35f, 0.08f) },
-            { KnightRunTexture.VolcanoRock, new Color(0.22f, 0.12f, 0.10f) },
+            { KnightRunTexture.LavaPool, new Color(1f, 0.42f, 0.08f) },
+            { KnightRunTexture.VolcanoRock, new Color(0.28f, 0.14f, 0.10f) },
         };
 
         public static Material Get(KnightRunTexture id, Vector2? tiling = null)
@@ -108,6 +109,8 @@ namespace KnightRun.World
                     RunPhase.Forest => KnightRunTexture.GroundForest,
                     RunPhase.Cave => KnightRunTexture.GroundCave,
                     RunPhase.Volcano => KnightRunTexture.GroundVolcano,
+                    RunPhase.IceCavern => KnightRunTexture.GroundCave,
+                    RunPhase.Desert => KnightRunTexture.GroundMine,
                     _ => KnightRunTexture.GroundMine
                 },
                 PhaseSurface.Wall => phase switch
@@ -125,7 +128,43 @@ namespace KnightRun.World
             if (phase == RunPhase.Forest && surface == PhaseSurface.Ground && tiling == null)
                 tile = new Vector2(8f, 16f);
 
-            return Get(id, tile);
+            if (phase == RunPhase.Volcano && surface == PhaseSurface.Ground && tiling == null)
+                tile = new Vector2(4f, 8f);
+
+            Material material = Get(id, tile);
+            if (phase is RunPhase.IceCavern or RunPhase.Desert)
+                material = GetPhaseTintedMaterial(material, phase, surface);
+
+            return material;
+        }
+
+        static Material GetPhaseTintedMaterial(Material source, RunPhase phase, PhaseSurface surface)
+        {
+            string key = $"{phase}_{surface}";
+            if (PhaseTintCache.TryGetValue(key, out Material cached))
+                return cached;
+
+            var tinted = new Material(source)
+            {
+                name = $"{source.name}_{phase}_{surface}"
+            };
+
+            Color tint = (phase, surface) switch
+            {
+                (RunPhase.IceCavern, PhaseSurface.Ground) => new Color(0.72f, 0.86f, 0.95f),
+                (RunPhase.IceCavern, PhaseSurface.Wall) => new Color(0.55f, 0.70f, 0.85f),
+                (RunPhase.Desert, PhaseSurface.Ground) => new Color(0.86f, 0.70f, 0.38f),
+                (RunPhase.Desert, PhaseSurface.Wall) => new Color(0.72f, 0.52f, 0.28f),
+                _ => Color.white
+            };
+
+            if (tinted.HasProperty("_BaseColor"))
+                tinted.SetColor("_BaseColor", tint);
+            if (tinted.HasProperty("_Color"))
+                tinted.SetColor("_Color", tint);
+
+            PhaseTintCache[key] = tinted;
+            return tinted;
         }
 
         static Material CreateMaterial(KnightRunTexture id, Vector2 tiling)

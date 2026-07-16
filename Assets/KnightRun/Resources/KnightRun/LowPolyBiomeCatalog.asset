@@ -1,0 +1,136 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c323717fd655414bb5a5919c570c9d2, type: 3}
+  m_Name: LowPolyBiomeCatalog
+  m_EditorClassIdentifier: 
+  cave:
+    groundPrefabs: []
+    wallPrefabs:
+    - {fileID: 6742988440827079097, guid: 2637c1411d2778945b928b1572376856, type: 3}
+    - {fileID: 6248790310260342358, guid: 5fcb4455afa303d4aaaf176983888312, type: 3}
+    - {fileID: 5108496704892620297, guid: 52c942447f425a64a8cd0588f03d26b1, type: 3}
+    rockPrefabs:
+    - {fileID: 5022834708154639289, guid: 90754da6de2e2e9469140b5af4fdcadc, type: 3}
+    - {fileID: 7675409278973786537, guid: cffc587501cf436438c4ef9d71e29e4b, type: 3}
+    - {fileID: 5514414500036276741, guid: 2d3d41f5505973849a28a62ebd618400, type: 3}
+    - {fileID: 7405846476849542632, guid: c6308cb7062fac34e8e50600086b12a1, type: 3}
+    - {fileID: 5202732821079448320, guid: cebfacc247a640945a2c30b442202fca, type: 3}
+    - {fileID: 4680757731160225450, guid: 0fde05fa0f3321942a21896ff4f0856f, type: 3}
+    - {fileID: 8783306491908617939, guid: f02116c209ecd9e488fc4d2cd8996133, type: 3}
+    decorationPrefabs: []
+    obstaclePrefabs: []
+    replaceGround: 0
+    replaceWalls: 1
+    wallTargetHeight: 4.5
+    rockTargetHeight: 2.6
+    groundTileDepth: 1.35
+  volcano:
+    groundPrefabs: []
+    wallPrefabs:
+    - {fileID: 323678428011913138, guid: 4804b87a6c8c028429e3dad6ac55f71e, type: 3}
+    - {fileID: 1993587541353703577, guid: ea2d9ebe77667c44f9e1197ab3d69758, type: 3}
+    - {fileID: 7448900680707013588, guid: c463724616cc10749ba89c16eedc34a3, type: 3}
+    rockPrefabs:
+    - {fileID: 4483177705942750764, guid: eb18e7824f048f248884dc809e9991a3, type: 3}
+    - {fileID: 4644521970776343938, guid: 16e921c133c488041b656fa836fa07e0, type: 3}
+    - {fileID: 7144284153643126344, guid: 9edc3987d3c84cd459d403e8f1403414, type: 3}
+    decorationPrefabs:
+    - {fileID: 7404011386063777475, guid: 0785483d7b537a7408ea4f697457ccd2, type: 3}
+    - {fileID: 5960436006095334623, guid: 1a347d038c462b54881e43bbd5be4128, type: 3}
+    obstaclePrefabs: []
+    replaceGround: 0
+    replaceWalls: 1
+    wallTargetHeight: 6
+    rockTargetHeight: 2.3
+    groundTileDepth: 1.35
+  ice:
+    groundPrefabs: []
+    wallPrefabs:
+    - {fileID: 4899583741315840764, guid: 058c71a43cc03444fbb222f74297f85a, type: 3}
+    - {fileID: 7799598339947194755, guid: 46ffc482a5b7ead4180fcaee8b20e708, type: 3}
+    - {fileID: 8696482617218564254, guid: 4e4ae207bef64494986ca3bfeed90b05, type: 3}
+    rockPrefabs:
+    - {fileID: 8819208786060711880, guid: e5f2010e51a77964a938d5d2c485ba37, type: 3}
+    - {fileID: 1850899330671549312, guid: ff8916c7ca4f05642a4cb2d964203fdc, type: 3}
+    - {fileID: 6120407510012501105, guid: 4806b64503d3b1a4fa1643b0baaa05be, type: 3}
+    decorationPrefabs:
+    - {fileID: 5990300224523370596, guid: c111c627cabadd74b95c42ca886351ee, type: 3}
+    - {fileID: 4283429878576995869, guid: 8f45cc4a1e2e2ed42a7d686054a0437e, type: 3}
+    - {fileID: 2196600302573777373, guid: 35cb40a8633fa9640aae958f1e2c97c0, type: 3}
+    obstaclePrefabs: []
+    replaceGround: 0
+    replaceWalls: 1
+    wallTargetHeight: 5.5
+    rockTargetHeight: 2.2
+    groundTileDepth: 1.35
+  desert:
+    groundPrefabs: []
+    wallPrefabs:
+    - {fileID: 6742988440827079097, guid: 2637c1411d2778945b928b1572376856, type: 3}
+    - {fileID: 6248790310260342358, guid: 5fcb4455afa303d4aaaf176983888312, type: 3}
+    - {fileID: 5108496704892620297, guid: 52c942447f425a64a8cd0588f03d26b1, type: 3}
+    - {fileID: 145164, guid: 8b8681c086a094348955216d4ef3cf0f, type: 3}
+    - {fileID: 116276, guid: 689a36ce1e8152f488b3a0d5fc644805, type: 3}
+    rockPrefabs:
+    - {fileID: 5022834708154639289, guid: 90754da6de2e2e9469140b5af4fdcadc, type: 3}
+    - {fileID: 7675409278973786537, guid: cffc587501cf436438c4ef9d71e29e4b, type: 3}
+    - {fileID: 5514414500036276741, guid: 2d3d41f5505973849a28a62ebd618400, type: 3}
+    - {fileID: 145164, guid: 8b8681c086a094348955216d4ef3cf0f, type: 3}
+    - {fileID: 116276, guid: 689a36ce1e8152f488b3a0d5fc644805, type: 3}
+    decorationPrefabs: []
+    obstaclePrefabs:
+    - {fileID: 3359984670276043935, guid: 49640c2a438691146aa78dcc2a345994, type: 3}
+    - {fileID: 1011888297313773941, guid: dc68838a004275942ad753502a6f48b3, type: 3}
+    - {fileID: 8762079265954363094, guid: dd1120119fe79a74983c1aebadcc6509, type: 3}
+    - {fileID: 8597958683921098338, guid: 54819025bede1514f8ee0d6d9a64ee23, type: 3}
+    - {fileID: 8377495617986386806, guid: 14d94d92b89fde24da3ddcbbedb05b3a, type: 3}
+    - {fileID: 7593348508969535275, guid: a86e4cbf057f83644a96386065def4e0, type: 3}
+    - {fileID: 729008475924470239, guid: 785426bcb71c54448b7d3f06a9ba7271, type: 3}
+    - {fileID: 143784, guid: 5d8a4c5c2390fc54e96a652c3eeaf313, type: 3}
+    - {fileID: 110776, guid: 63ff2386a1262d64f99de6e3e1183874, type: 3}
+    - {fileID: 136472, guid: e9ef501c03d9e0f4f8965162fd6bfbba, type: 3}
+    - {fileID: 185962, guid: 9739a89a5ec460c4b94bb52719a0931c, type: 3}
+    - {fileID: 178436, guid: 587331bb58ede6149bd7d31473a36202, type: 3}
+    - {fileID: 117896, guid: 2150293d12bfb2448a976624bc72a6f2, type: 3}
+    - {fileID: 163980, guid: 2fb6f5d47657319408dbd4f3e8412b4c, type: 3}
+    - {fileID: 145826, guid: 35d82b3ae8f9c4f42b6b11ccb42803cd, type: 3}
+    - {fileID: 145430, guid: 82f6882977329724ca4b934e09af87fc, type: 3}
+    - {fileID: 131104, guid: 2222b58a5f6dde443bd027bc9bdf5d1d, type: 3}
+    replaceGround: 0
+    replaceWalls: 1
+    wallTargetHeight: 7
+    rockTargetHeight: 2.6
+    groundTileDepth: 2.2
+  mine:
+    groundPrefabs: []
+    wallPrefabs: []
+    rockPrefabs:
+    - {fileID: 5022834708154639289, guid: 90754da6de2e2e9469140b5af4fdcadc, type: 3}
+    - {fileID: 7675409278973786537, guid: cffc587501cf436438c4ef9d71e29e4b, type: 3}
+    - {fileID: 7405846476849542632, guid: c6308cb7062fac34e8e50600086b12a1, type: 3}
+    - {fileID: 5202732821079448320, guid: cebfacc247a640945a2c30b442202fca, type: 3}
+    - {fileID: 4680757731160225450, guid: 0fde05fa0f3321942a21896ff4f0856f, type: 3}
+    decorationPrefabs:
+    - {fileID: 6478603492749168730, guid: e292aec9552315249853b3ae02128644, type: 3}
+    - {fileID: 6568906089862795747, guid: 965e38e09b8fbeb4194c546f0706ab95, type: 3}
+    - {fileID: 942494010589322516, guid: 7c71b267140ade9468c4e8279e86788f, type: 3}
+    - {fileID: 3895414530044178352, guid: 63ad05e68fca4624290d05610eee0c4a, type: 3}
+    - {fileID: 6472935499928091307, guid: c9a58bdefb890cb4f923322739a7a8af, type: 3}
+    - {fileID: 7180964410541168609, guid: ce97271455856e24da55f27fa829b747, type: 3}
+    - {fileID: 2059552958950734656, guid: 437b602cf166d9e4498146bf28c503a1, type: 3}
+    - {fileID: 7302817245999164550, guid: 52735a1977232a24fbd70c149b3071cb, type: 3}
+    obstaclePrefabs: []
+    replaceGround: 0
+    replaceWalls: 0
+    wallTargetHeight: 3.2
+    rockTargetHeight: 1.8
+    groundTileDepth: 1.2

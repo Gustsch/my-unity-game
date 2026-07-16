@@ -13,8 +13,10 @@ namespace KnightRun.Gameplay
         const float ContactCooldown = 0.6f;
         const float ForestScaleMin = 1.05f;
         const float ForestScaleMax = 1.35f;
-        const float CaveRockTargetHeightMin = 1.25f;
-        const float CaveRockTargetHeightMax = 1.7f;
+        const float CaveRockTargetHeightMin = 0.7f;
+        const float CaveRockTargetHeightMax = 1.0f;
+        const float DesertObstacleHeightMin = 1.1f;
+        const float DesertObstacleHeightMax = 1.75f;
 
         Transform player;
         GameManager gameManager;
@@ -31,16 +33,31 @@ namespace KnightRun.Gameplay
             GameObject visualPrefab,
             bool fitCaveRockSize)
         {
-            var go = new GameObject(fitCaveRockSize ? "CaveRockObstacle" : "ForestObstacle");
+            return Spawn(parent, worldPosition, visualPrefab, fitCaveRockSize, fitDesertObstacleSize: false);
+        }
+
+        public static PathTreeObstacle Spawn(
+            Transform parent,
+            Vector3 worldPosition,
+            GameObject visualPrefab,
+            bool fitCaveRockSize,
+            bool fitDesertObstacleSize)
+        {
+            string name = fitCaveRockSize
+                ? "CaveRockObstacle"
+                : fitDesertObstacleSize
+                    ? "DesertObstacle"
+                    : "ForestObstacle";
+            var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.transform.position = worldPosition;
 
             var tree = go.AddComponent<PathTreeObstacle>();
-            tree.BuildVisual(visualPrefab, fitCaveRockSize);
+            tree.BuildVisual(visualPrefab, fitCaveRockSize, fitDesertObstacleSize);
             return tree;
         }
 
-        void BuildVisual(GameObject visualPrefab, bool fitCaveRockSize)
+        void BuildVisual(GameObject visualPrefab, bool fitCaveRockSize, bool fitDesertObstacleSize)
         {
             GameObject visual = SimpleNatureCatalog.InstantiateVisual(visualPrefab, transform);
             if (visual != null)
@@ -50,6 +67,8 @@ namespace KnightRun.Gameplay
 
                 if (fitCaveRockSize)
                     FitVisualHeight(transform, visual, Random.Range(CaveRockTargetHeightMin, CaveRockTargetHeightMax));
+                else if (fitDesertObstacleSize)
+                    FitVisualHeight(transform, visual, Random.Range(DesertObstacleHeightMin, DesertObstacleHeightMax));
                 else
                     visual.transform.localScale = Vector3.one * Random.Range(ForestScaleMin, ForestScaleMax);
             }
@@ -60,8 +79,10 @@ namespace KnightRun.Gameplay
             if (visual == null || !TryGetVisualBounds(visual, out Bounds bounds))
             {
                 hitbox.size = fitCaveRockSize
-                    ? new Vector3(1.1f, 1.35f, 1.1f)
-                    : new Vector3(0.85f, 1.1f, 0.85f);
+                    ? new Vector3(0.7f, 0.85f, 0.7f)
+                    : fitDesertObstacleSize
+                        ? new Vector3(0.75f, 1.1f, 0.75f)
+                        : new Vector3(0.85f, 1.1f, 0.85f);
                 hitbox.center = new Vector3(0f, hitbox.size.y * 0.5f, 0f);
                 return;
             }
@@ -70,9 +91,16 @@ namespace KnightRun.Gameplay
             if (fitCaveRockSize)
             {
                 hitbox.size = new Vector3(
-                    Mathf.Clamp(bounds.size.x, 0.95f, 2.2f),
-                    Mathf.Clamp(bounds.size.y, 1.1f, 2.0f),
-                    Mathf.Clamp(bounds.size.z, 0.95f, 2.2f));
+                    Mathf.Clamp(bounds.size.x * 0.85f, 0.55f, 1.15f),
+                    Mathf.Clamp(bounds.size.y * 0.9f, 0.65f, 1.15f),
+                    Mathf.Clamp(bounds.size.z * 0.85f, 0.55f, 1.15f));
+            }
+            else if (fitDesertObstacleSize)
+            {
+                hitbox.size = new Vector3(
+                    Mathf.Clamp(bounds.size.x * 0.8f, 0.55f, 1.35f),
+                    Mathf.Clamp(bounds.size.y * 0.85f, 0.7f, 1.6f),
+                    Mathf.Clamp(bounds.size.z * 0.8f, 0.55f, 1.35f));
             }
             else
             {
