@@ -15,6 +15,9 @@ namespace KnightRun.Meta
 
         public static bool IsOwned(HeroCharacterId id)
         {
+            if (DebugTestMode.IsActive)
+                return true;
+
             if (id == HeroCharacterId.Knight)
                 return true;
 

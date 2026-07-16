@@ -239,7 +239,8 @@ namespace KnightRun.World
                 PathTreeObstacle.Spawn(
                     segment.transform,
                     new Vector3(GetSpawnX(settings), 0f, spawnZ),
-                    rockPrefab);
+                    rockPrefab,
+                    fitCaveRockSize: true);
             }
         }
 

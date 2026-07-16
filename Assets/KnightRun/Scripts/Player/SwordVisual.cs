@@ -13,10 +13,16 @@ namespace KnightRun.Player
 
         public void Build(Transform parent)
         {
+            DestroyExisting("SwordPivot");
+
             var pivotGo = new GameObject("SwordPivot");
             pivotGo.transform.SetParent(parent, false);
-            pivotGo.transform.localPosition = new Vector3(0f, 0.9f, 0.15f);
-            pivotGo.transform.localRotation = Quaternion.Euler(-20f, 70f, 0f);
+            pivotGo.transform.localPosition = parent.name.Contains("Socket")
+                ? Vector3.zero
+                : new Vector3(0f, 0.9f, 0.15f);
+            pivotGo.transform.localRotation = parent.name.Contains("Socket")
+                ? Quaternion.identity
+                : Quaternion.Euler(-20f, 70f, 0f);
             swordPivot = pivotGo.transform;
 
             modelRoot = WeaponAssetVisual.Create(
@@ -43,6 +49,21 @@ namespace KnightRun.Player
 
             if (modelRoot != null)
                 modelRoot.localScale = modelBaseScale * multiplier;
+        }
+
+        void DestroyExisting(string childName)
+        {
+            if (swordPivot != null)
+            {
+                Destroy(swordPivot.gameObject);
+                swordPivot = null;
+                modelRoot = null;
+                return;
+            }
+
+            Transform existing = transform.Find(childName);
+            if (existing != null)
+                Destroy(existing.gameObject);
         }
     }
 }

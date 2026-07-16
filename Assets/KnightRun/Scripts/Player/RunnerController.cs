@@ -26,6 +26,8 @@ namespace KnightRun.Player
         CharacterController controller;
         MineCartVisual mineCartVisual;
         KnightSlideVisual slideVisual;
+        PlayerAnimationDriver animationDriver;
+        PlayerCharacterVisual characterVisual;
         HeroUpgradeStats upgradeStats;
         GameManager gameManager;
         RunPhaseManager phaseManager;
@@ -42,6 +44,7 @@ namespace KnightRun.Player
         float stumbleTimer;
         float stumbleElapsed;
         float stumbleOffsetX;
+        float previousX;
 
         const float LaneSwitchSpeed = 15f;
         const float BaseFreeMoveSpeed = 5f;
@@ -62,6 +65,7 @@ namespace KnightRun.Player
         const float StumbleSpeedMultiplier = 0.65f;
         const float StumbleSwayAmplitude = 0.12f;
         const float StumbleSwayFrequency = 24f;
+        const float StrafeFacingSpeedReference = 5f;
 
         float FreeMoveSpeed
         {
@@ -94,9 +98,12 @@ namespace KnightRun.Player
             controller = GetComponent<CharacterController>();
             mineCartVisual = GetComponent<MineCartVisual>();
             slideVisual = GetComponent<KnightSlideVisual>();
+            animationDriver = GetComponent<PlayerAnimationDriver>();
+            characterVisual = GetComponent<PlayerCharacterVisual>();
             upgradeStats = GetComponent<HeroUpgradeStats>();
             CurrentLane = PhaseTrackLayout.GetCenterLaneIndex();
             targetLaneX = LanePositions[CurrentLane];
+            previousX = transform.position.x;
         }
 
         void Start()
@@ -141,7 +148,52 @@ namespace KnightRun.Player
             HandleInput();
             UpdateSlide();
             Move();
+            UpdateStrafeFacing();
+            UpdateAnimationDriver();
             CheckFall();
+        }
+
+        void UpdateStrafeFacing()
+        {
+            if (characterVisual == null)
+                characterVisual = GetComponent<PlayerCharacterVisual>();
+            if (characterVisual == null)
+                return;
+
+            bool allowTurn = !IsSliding && !IsRooted && !UsesLaneMovement;
+            float strafeAmount = 0f;
+
+            if (allowTurn)
+            {
+                float lateralSpeed = (transform.position.x - previousX) / Mathf.Max(Time.deltaTime, 0.0001f);
+                // Prefer stick/keyboard intent when present; fall back to actual velocity (lanes/ice).
+                if (Mathf.Abs(horizontalInput) > 0.01f)
+                    strafeAmount = horizontalInput;
+                else if (UsesSlideMovement && Mathf.Abs(iceHorizontalVelocity) > 0.15f)
+                    strafeAmount = Mathf.Clamp(iceHorizontalVelocity / IceMaxHorizontalSpeed, -1f, 1f);
+                else
+                    strafeAmount = Mathf.Clamp(lateralSpeed / StrafeFacingSpeedReference, -1f, 1f);
+            }
+
+            characterVisual.SetStrafeFacing(strafeAmount, allowTurn);
+            previousX = transform.position.x;
+        }
+
+        void UpdateAnimationDriver()
+        {
+            if (animationDriver == null)
+                return;
+
+            float forwardSpeed = gameManager != null ? gameManager.CurrentSpeed : 0f;
+            if (IsStumbling)
+                forwardSpeed *= StumbleSpeedMultiplier;
+
+            animationDriver.SetSpeed(forwardSpeed);
+            animationDriver.SetGrounded(IsGrounded);
+            animationDriver.SetSliding(IsSliding);
+            animationDriver.SetStumbling(IsStumbling);
+            animationDriver.SetInMineCart(UsesLaneMovement);
+            animationDriver.SetVerticalVelocity(verticalVelocity);
         }
 
         public void ApplyRoot(float duration)
@@ -474,6 +526,9 @@ namespace KnightRun.Player
         {
             if (mineCartVisual != null)
                 mineCartVisual.SetActive(enabled);
+
+            animationDriver ??= GetComponent<PlayerAnimationDriver>();
+            animationDriver?.SetInMineCart(enabled);
         }
 
         public void ResetToStart(Vector3 startPosition)
@@ -492,6 +547,9 @@ namespace KnightRun.Player
             ClearStumble();
             fallRestartCooldown = 0.5f;
             EndSlide();
+            previousX = startPosition.x;
+            characterVisual ??= GetComponent<PlayerCharacterVisual>();
+            characterVisual?.ResetStrafeFacing();
             GetComponent<KnightHealth>()?.ResetHealth();
             SetMineCartMode(false);
             controller.enabled = true;

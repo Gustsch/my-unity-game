@@ -13,9 +13,17 @@ namespace KnightRun.Player
 
         public void Build(Transform parent)
         {
+            if (axeRoot != null)
+            {
+                Destroy(axeRoot.gameObject);
+                axeRoot = null;
+            }
+
             var rootGo = new GameObject("ThrowingAxeVisual");
             rootGo.transform.SetParent(parent, false);
-            rootGo.transform.localPosition = new Vector3(0.55f, 1f, 0.1f);
+            rootGo.transform.localPosition = parent != null && parent.name.Contains("Socket")
+                ? Vector3.zero
+                : new Vector3(0.55f, 1f, 0.1f);
             axeRoot = rootGo.transform;
 
             var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -23,14 +31,14 @@ namespace KnightRun.Player
             head.transform.localScale = new Vector3(0.22f, 0.05f, 0.14f);
             head.transform.localPosition = new Vector3(0f, 0f, 0.1f);
             head.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.KnightSword);
-            Object.Destroy(head.GetComponent<Collider>());
+            Destroy(head.GetComponent<Collider>());
 
             var handle = GameObject.CreatePrimitive(PrimitiveType.Cube);
             handle.transform.SetParent(axeRoot, false);
             handle.transform.localScale = new Vector3(0.05f, 0.05f, 0.18f);
             handle.transform.localPosition = new Vector3(0f, 0f, -0.05f);
             handle.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.LogObstacle);
-            Object.Destroy(handle.GetComponent<Collider>());
+            Destroy(handle.GetComponent<Collider>());
 
             SetVisible(false);
         }

@@ -15,9 +15,17 @@ namespace KnightRun.Player
 
         public void Build(Transform parent)
         {
+            if (shurikenRoot != null)
+            {
+                Destroy(shurikenRoot.gameObject);
+                shurikenRoot = null;
+            }
+
             var rootGo = new GameObject("ShurikenVisual");
             rootGo.transform.SetParent(parent, false);
-            rootGo.transform.localPosition = new Vector3(0.45f, 1.05f, 0.2f);
+            rootGo.transform.localPosition = parent != null && parent.name.Contains("Socket")
+                ? Vector3.zero
+                : new Vector3(0.45f, 1.05f, 0.2f);
             shurikenRoot = rootGo.transform;
 
             bladeA = CreateBlade(shurikenRoot, new Vector3(0.22f, 0.03f, 0.05f), Quaternion.Euler(0f, 0f, 45f), "BladeA");

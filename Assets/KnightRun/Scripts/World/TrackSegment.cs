@@ -31,7 +31,7 @@ namespace KnightRun.World
             Phase = settings.phase;
             transform.position = new Vector3(0f, 0f, zPosition);
 
-            Material groundMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Ground, new Vector2(2f, 4f));
+            Material groundMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Ground);
             Material wallMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Wall, new Vector2(1f, 4f));
 
             ground = CreateBox("Ground", new Vector3(PhaseTrackLayout.GetGroundWidth(settings), 0.4f, Length), new Vector3(0f, -0.2f, Length * 0.5f), groundMat, keepCollider: true);
@@ -240,7 +240,7 @@ namespace KnightRun.World
             Phase = settings.phase;
             ApplyLayout(settings);
 
-            Material groundMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Ground, new Vector2(2f, 4f));
+            Material groundMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Ground);
             Material wallMat = KnightRunMaterials.GetForPhase(settings.phase, PhaseSurface.Wall, new Vector2(1f, 4f));
 
             SetMaterial(ground, groundMat);
@@ -271,8 +271,7 @@ namespace KnightRun.World
 
             transitionGroundMaterial = KnightRunMaterials.GetForPhase(
                 settings.phase,
-                PhaseSurface.Ground,
-                new Vector2(2f, 4f));
+                PhaseSurface.Ground);
             transitionWallMaterial = KnightRunMaterials.GetForPhase(
                 settings.phase,
                 PhaseSurface.Wall,

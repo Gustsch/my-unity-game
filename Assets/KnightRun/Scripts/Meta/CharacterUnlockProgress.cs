@@ -17,6 +17,9 @@ namespace KnightRun.Meta
 
         public static bool HasDefeatedBossPhase(int phaseIndex)
         {
+            if (DebugTestMode.IsActive)
+                return phaseIndex >= 0;
+
             return phaseIndex >= 0 && highestBossPhaseDefeated >= phaseIndex;
         }
 

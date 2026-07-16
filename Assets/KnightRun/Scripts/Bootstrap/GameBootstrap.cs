@@ -155,55 +155,63 @@ namespace KnightRun
 
         static RunnerController CreatePlayer()
         {
-            var playerGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            playerGo.name = "Knight";
+            var playerGo = new GameObject("Player");
             playerGo.tag = "Player";
             playerGo.transform.position = RunnerController.StartPosition;
-
-            Object.Destroy(playerGo.GetComponent<CapsuleCollider>());
 
             var controller = playerGo.AddComponent<CharacterController>();
             controller.height = 2f;
             controller.radius = 0.4f;
             controller.center = new Vector3(0f, 1f, 0f);
 
-            var bodyRenderer = playerGo.GetComponent<Renderer>();
-            bodyRenderer.sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.KnightArmor);
+            playerGo.AddComponent<PlayerAnimationDriver>();
 
-            var helmet = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            helmet.name = "Helmet";
-            helmet.transform.SetParent(playerGo.transform, false);
-            helmet.transform.localScale = new Vector3(0.7f, 0.35f, 0.7f);
-            helmet.transform.localPosition = new Vector3(0f, 1.15f, 0f);
-            helmet.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.KnightHelmet);
-            Object.Destroy(helmet.GetComponent<Collider>());
+            var characterVisual = playerGo.AddComponent<PlayerCharacterVisual>();
+            characterVisual.Build();
+            DebugTestMode.AttachAnchorIfNeeded(playerGo.transform);
 
             var mineCartVisual = playerGo.AddComponent<MineCartVisual>();
             mineCartVisual.Build(playerGo.transform);
 
             var swordVisual = playerGo.AddComponent<SwordVisual>();
-            swordVisual.Build(playerGo.transform);
-
             var bowVisual = playerGo.AddComponent<BowVisual>();
-            bowVisual.Build(playerGo.transform);
-
             var shurikenVisual = playerGo.AddComponent<ShurikenVisual>();
-            shurikenVisual.Build(playerGo.transform);
-
             var magicBookVisual = playerGo.AddComponent<MagicBookVisual>();
-            magicBookVisual.Build(playerGo.transform);
-
             var bombVisual = playerGo.AddComponent<BombVisual>();
-            bombVisual.Build(playerGo.transform);
-
             var boomerangVisual = playerGo.AddComponent<BoomerangVisual>();
-            boomerangVisual.Build(playerGo.transform);
-
             var throwingAxeVisual = playerGo.AddComponent<ThrowingAxeVisual>();
-            throwingAxeVisual.Build(playerGo.transform);
-
             var slideVisual = playerGo.AddComponent<KnightSlideVisual>();
-            slideVisual.Build(helmet.transform, swordVisual.Pivot, bodyRenderer);
+
+            void BindVisualAttachments()
+            {
+                Transform fallback = playerGo.transform;
+                swordVisual.Build(characterVisual.GetWeaponParent(WeaponMount.RightHand, fallback));
+                bowVisual.Build(characterVisual.GetWeaponParent(WeaponMount.LeftHand, fallback));
+                shurikenVisual.Build(characterVisual.GetWeaponParent(WeaponMount.Throw, fallback));
+                bombVisual.Build(characterVisual.GetWeaponParent(WeaponMount.Throw, fallback));
+                boomerangVisual.Build(characterVisual.GetWeaponParent(WeaponMount.Throw, fallback));
+                throwingAxeVisual.Build(characterVisual.GetWeaponParent(WeaponMount.Throw, fallback));
+                magicBookVisual.Build(characterVisual.VisualRoot != null ? characterVisual.VisualRoot : fallback);
+
+                if (characterVisual.IsLegacyVisual)
+                {
+                    slideVisual.BuildLegacy(
+                        characterVisual.LegacyHelmet,
+                        swordVisual.Pivot,
+                        characterVisual.LegacyBodyRenderer);
+                }
+                else
+                {
+                    slideVisual.BuildModular(characterVisual.VisualRoot, swordVisual.Pivot);
+                }
+            }
+
+            BindVisualAttachments();
+            characterVisual.OnVisualRebuilt += () =>
+            {
+                BindVisualAttachments();
+                playerGo.GetComponent<HeroUpgradeStats>()?.RefreshConsumers();
+            };
 
             playerGo.AddComponent<HeroUpgradeStats>();
             playerGo.AddComponent<KnightSwordAttack>();

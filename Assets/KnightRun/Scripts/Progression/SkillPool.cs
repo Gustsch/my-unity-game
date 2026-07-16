@@ -23,9 +23,9 @@ namespace KnightRun.Progression
         public const float QuickSlashSpeedPerLevel = 0.1f;
         public const float PiercingChancePerLevel = 0.2f;
         public const int PiercingGuaranteedEveryLevels = 5;
-        public const float CriticalStrikeChancePerLevel = 0.05f;
+        public const float CriticalStrikeChancePerLevel = 0.03f;
         public const float CriticalStrikeDamageMultiplier = 2f;
-        public const float ExperienceBoostPerLevel = 0.15f;
+        public const float ExperienceBoostPerLevel = 0.10f;
         public const int BaseXpPerLevel = 10;
         public const int VigorHealthPerLevel = 100;
         public const float BowAttackInterval = 1.2f;

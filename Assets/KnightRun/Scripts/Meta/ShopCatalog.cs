@@ -8,6 +8,9 @@ namespace KnightRun.Meta
 
         public static int GetLevel(ShopUpgradeId id)
         {
+            if (DebugTestMode.IsActive)
+                return MaxLevel;
+
             return PlayerPrefs.GetInt(GetLevelKey(id), 0);
         }
 

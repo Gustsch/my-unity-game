@@ -13,9 +13,17 @@ namespace KnightRun.Player
 
         public void Build(Transform parent)
         {
+            if (boomerangRoot != null)
+            {
+                Destroy(boomerangRoot.gameObject);
+                boomerangRoot = null;
+            }
+
             var rootGo = new GameObject("BoomerangVisual");
             rootGo.transform.SetParent(parent, false);
-            rootGo.transform.localPosition = new Vector3(-0.45f, 1.05f, 0.15f);
+            rootGo.transform.localPosition = parent != null && parent.name.Contains("Socket")
+                ? Vector3.zero
+                : new Vector3(-0.45f, 1.05f, 0.15f);
             boomerangRoot = rootGo.transform;
 
             CreateBlade(boomerangRoot, new Vector3(0.28f, 0.04f, 0.08f), Quaternion.Euler(0f, 0f, 18f));

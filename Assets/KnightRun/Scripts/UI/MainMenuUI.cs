@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using KnightRun;
 using KnightRun.Meta;
 using KnightRun.Player;
+using KnightRun.Progression;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,6 +33,7 @@ namespace KnightRun.UI
         Button charactersBackButton;
         Button optionsLanguageButton;
         Button optionsResetButton;
+        Button optionsTestModeButton;
         bool resetSaveConfirmationPending;
 
         readonly MenuNavigation mainNavigation = new MenuNavigation();
@@ -210,15 +212,6 @@ namespace KnightRun.UI
             optionsText = UiFactory.CreateText(panel.transform, string.Empty, 24, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(760f, 320f));
 
-            optionsLanguageButton = UiFactory.CreateAnchoredButton(
-                panel.transform,
-                Localization.GetLanguageButtonLabel(),
-                new Vector2(0.5f, 0f),
-                new Vector2(0.5f, 0f),
-                new Vector2(0f, 180f),
-                new Vector2(320f, 56f),
-                Localization.ToggleLanguage).GetComponent<Button>();
-
             optionsResetButton = UiFactory.CreateAnchoredButton(
                 panel.transform,
                 Localization.T("ui.reset_save"),
@@ -228,9 +221,28 @@ namespace KnightRun.UI
                 new Vector2(320f, 56f),
                 HandleResetSaveClick).GetComponent<Button>();
 
+            optionsTestModeButton = UiFactory.CreateAnchoredButton(
+                panel.transform,
+                Localization.T("ui.test_mode_toggle"),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 180f),
+                new Vector2(320f, 56f),
+                HandleTestModeToggle).GetComponent<Button>();
+
+            optionsLanguageButton = UiFactory.CreateAnchoredButton(
+                panel.transform,
+                Localization.GetLanguageButtonLabel(),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 250f),
+                new Vector2(320f, 56f),
+                Localization.ToggleLanguage).GetComponent<Button>();
+
             optionsNavigation.SetButtons(new[]
             {
                 optionsLanguageButton,
+                optionsTestModeButton,
                 optionsResetButton,
                 UiFactory.CreateAnchoredButton(
                     panel.transform,
@@ -494,7 +506,49 @@ namespace KnightRun.UI
                 return;
             }
 
-            optionsText.text = Localization.T("ui.options_help");
+            optionsText.text = Localization.T("ui.options_help")
+                + "\n\n"
+                + Localization.Format(
+                    "ui.test_mode",
+                    DebugTestMode.IsActive
+                        ? Localization.T("ui.test_mode_on")
+                        : Localization.T("ui.test_mode_off"))
+                + "\n"
+                + Localization.T("ui.test_mode_help");
+            UpdateTestModeButtonLabel();
+        }
+
+        void HandleTestModeToggle()
+        {
+            DebugTestMode.Toggle();
+
+            var player = FindFirstObjectByType<RunnerController>();
+            if (player != null)
+            {
+                DebugTestMode.AttachAnchorIfNeeded(player.transform);
+                player.GetComponent<HeroUpgradeStats>()?.ResetBonuses();
+            }
+
+            RefreshOptionsDisplay();
+            RefreshShopDisplay();
+            RefreshCharacterDisplay();
+            optionsNavigation.RefreshVisuals();
+        }
+
+        void UpdateTestModeButtonLabel()
+        {
+            if (optionsTestModeButton == null)
+                return;
+
+            Text label = optionsTestModeButton.GetComponentInChildren<Text>();
+            if (label != null)
+            {
+                label.text = Localization.Format(
+                    "ui.test_mode",
+                    DebugTestMode.IsActive
+                        ? Localization.T("ui.test_mode_on")
+                        : Localization.T("ui.test_mode_off"));
+            }
         }
 
         void HandleResetSaveClick()
@@ -563,6 +617,7 @@ namespace KnightRun.UI
             }
 
             UpdateResetSaveButtonLabel();
+            UpdateTestModeButtonLabel();
             RefreshMetaDisplay();
             RefreshCharacterDisplay();
             RefreshShopDisplay();

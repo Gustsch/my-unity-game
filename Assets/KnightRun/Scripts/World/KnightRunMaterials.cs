@@ -86,10 +86,15 @@ namespace KnightRun.World
 
         public static Material Get(KnightRunTexture id, Vector2? tiling = null)
         {
-            if (Cache.TryGetValue(id, out Material cached))
-                return cached;
+            Vector2 tile = tiling ?? Vector2.one;
 
-            Material material = CreateMaterial(id, tiling ?? Vector2.one);
+            if (Cache.TryGetValue(id, out Material cached))
+            {
+                ApplyTiling(cached, tile);
+                return cached;
+            }
+
+            Material material = CreateMaterial(id, tile);
             Cache[id] = material;
             return material;
         }
@@ -115,6 +120,11 @@ namespace KnightRun.World
             };
 
             Vector2 tile = tiling ?? (surface == PhaseSurface.Ground ? new Vector2(2f, 4f) : Vector2.one);
+
+            // Grass looks better with denser tiling on the long forest track.
+            if (phase == RunPhase.Forest && surface == PhaseSurface.Ground && tiling == null)
+                tile = new Vector2(8f, 16f);
+
             return Get(id, tile);
         }
 
@@ -170,22 +180,27 @@ namespace KnightRun.World
         static void ApplyTexture(Material material, Texture2D texture, Vector2 tiling)
         {
             if (material.HasProperty("_BaseMap"))
-            {
                 material.SetTexture("_BaseMap", texture);
-                material.SetTextureScale("_BaseMap", tiling);
-            }
 
             if (material.HasProperty("_MainTex"))
-            {
                 material.SetTexture("_MainTex", texture);
-                material.SetTextureScale("_MainTex", tiling);
-            }
+
+            ApplyTiling(material, tiling);
 
             if (material.HasProperty("_BaseColor"))
                 material.SetColor("_BaseColor", Color.white);
 
             if (material.HasProperty("_Color"))
                 material.SetColor("_Color", Color.white);
+        }
+
+        static void ApplyTiling(Material material, Vector2 tiling)
+        {
+            if (material.HasProperty("_BaseMap"))
+                material.SetTextureScale("_BaseMap", tiling);
+
+            if (material.HasProperty("_MainTex"))
+                material.SetTextureScale("_MainTex", tiling);
         }
 
         static void ApplyColor(Material material, Color color)

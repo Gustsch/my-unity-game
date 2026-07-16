@@ -17,10 +17,23 @@ namespace KnightRun.Player
 
         public void Build(Transform parent)
         {
+            if (bowRoot != null)
+            {
+                Destroy(bowRoot.gameObject);
+                bowRoot = null;
+                modelRoot = null;
+                arrowSpawn = null;
+            }
+
             var rootGo = new GameObject("BowVisual");
             rootGo.transform.SetParent(parent, false);
-            rootGo.transform.localPosition = new Vector3(-0.55f, 0.95f, 0.05f);
-            rootGo.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            bool socketParent = parent != null && parent.name.Contains("Socket");
+            rootGo.transform.localPosition = socketParent
+                ? Vector3.zero
+                : new Vector3(-0.55f, 0.95f, 0.05f);
+            rootGo.transform.localRotation = socketParent
+                ? Quaternion.identity
+                : Quaternion.Euler(0f, -90f, 0f);
             bowRoot = rootGo.transform;
 
             modelRoot = WeaponAssetVisual.Create(

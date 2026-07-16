@@ -186,9 +186,26 @@ namespace KnightRun.Progression
         public void ResetBonuses()
         {
             levels.Clear();
-            HeroSkillId startingWeapon = CharacterCatalog.GetStartingWeapon(CharacterSelection.SelectedCharacter);
-            levels[startingWeapon] = CharacterCatalog.StartingWeaponLevel;
-            HeroLevel = 0;
+
+            if (DebugTestMode.IsActive)
+            {
+                foreach (SkillDefinition skill in SkillPool.All)
+                    levels[skill.Id] = SkillPool.MaxSkillLevel;
+
+                HeroLevel = SkillPool.All.Length * SkillPool.MaxSkillLevel;
+            }
+            else
+            {
+                HeroSkillId startingWeapon = CharacterCatalog.GetStartingWeapon(CharacterSelection.SelectedCharacter);
+                levels[startingWeapon] = CharacterCatalog.StartingWeaponLevel;
+                HeroLevel = 0;
+            }
+
+            OnBonusesChanged?.Invoke();
+        }
+
+        public void RefreshConsumers()
+        {
             OnBonusesChanged?.Invoke();
         }
 

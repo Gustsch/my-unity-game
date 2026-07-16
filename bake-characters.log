@@ -1,0 +1,25 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Gustavo" at "2026-07-15T17:32:38.0883382Z"
+Built from '6000.5/staging' branch; Version is '6000.5.3f1 (c2eb47b3a2a9) revision 12774215'; Using compiler version '194234433'; Build Type 'Release'
+OS: 'Windows 10  (10.0.19045) 64bit Core' Language: 'pt' Physical Memory: 16296 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-07-15T17:32:38Z
+Error creating external process 'C:/Program Files/Unity/Hub/Editor/6000.5.3f1/Editor/Data/Resources/PackageManager/Server/UnityPackageManager.exe' : O sistema não pode encontrar o caminho especificado.
+Error cleaning up external process: Identificador inválido.
+[Package Manager] Cannot start server process [path: `C:/Program Files/Unity/Hub/Editor/6000.5.3f1/Editor/Data/Resources/PackageManager/Server/UnityPackageManager.exe`]
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.5.3f1\Editor\Unity.exe
+-batchmode
+-quit
+-projectPath
+e:\proj\my-unity-game
+-executeMethod
+KnightRun.EditorTools.BakeModularCharacterPrefabs.Bake
+-logFile
+e:\proj\my-unity-game\bake-characters.log
+Successfully changed project path to: e:\proj\my-unity-game
+E:/proj/my-unity-game
+Exiting without the bug reporter. Application will terminate with return code 1

@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Player
   - Ground
+  - KnightRunTester
   layers:
   - Default
   - TransparentFX

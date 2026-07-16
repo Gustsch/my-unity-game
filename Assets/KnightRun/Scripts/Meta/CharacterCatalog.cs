@@ -93,6 +93,9 @@ namespace KnightRun.Meta
 
         public static bool IsUnlockedForPurchase(HeroCharacterId id)
         {
+            if (DebugTestMode.IsActive)
+                return true;
+
             CharacterDefinition character = Get(id);
             if (character.UnlockAfterBossPhaseIndex < 0)
                 return true;

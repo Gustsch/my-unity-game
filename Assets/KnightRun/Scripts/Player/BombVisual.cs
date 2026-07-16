@@ -13,9 +13,17 @@ namespace KnightRun.Player
 
         public void Build(Transform parent)
         {
+            if (bombRoot != null)
+            {
+                Destroy(bombRoot.gameObject);
+                bombRoot = null;
+            }
+
             var rootGo = new GameObject("BombVisual");
             rootGo.transform.SetParent(parent, false);
-            rootGo.transform.localPosition = new Vector3(-0.35f, 0.75f, 0.25f);
+            rootGo.transform.localPosition = parent != null && parent.name.Contains("Socket")
+                ? Vector3.zero
+                : new Vector3(-0.35f, 0.75f, 0.25f);
             bombRoot = rootGo.transform;
 
             WeaponAssetVisual.Create(

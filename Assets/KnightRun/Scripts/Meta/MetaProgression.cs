@@ -21,6 +21,7 @@ namespace KnightRun.Meta
 
         public void Load()
         {
+            DebugTestMode.Load();
             TotalCoins = PlayerPrefs.GetInt(CoinsKey, 0);
             CharacterUnlockProgress.Load();
             CharacterSelection.Load();

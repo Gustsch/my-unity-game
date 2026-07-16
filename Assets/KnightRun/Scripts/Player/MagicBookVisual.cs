@@ -16,6 +16,13 @@ namespace KnightRun.Player
 
         public void Build(Transform parent)
         {
+            if (orbitRoot != null)
+            {
+                Destroy(orbitRoot.gameObject);
+                orbitRoot = null;
+                books.Clear();
+            }
+
             var orbitGo = new GameObject("MagicBookOrbit");
             orbitGo.transform.SetParent(parent, false);
             orbitGo.transform.localPosition = Vector3.zero;
