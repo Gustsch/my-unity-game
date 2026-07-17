@@ -56,11 +56,11 @@ namespace KnightRun.Player
         const float NormalHeight = 2f;
         const float SlideHeight = 1f;
         const float FallRestartY = -4f;
-        const float IceMaxHorizontalSpeed = 14f;
-        const float IceAcceleration = 180f;
-        const float IceStartAcceleration = 240f;
-        const float IceDeceleration = 320f;
-        const float IceStopThreshold = 0.15f;
+        const float IceMaxHorizontalSpeed = 6.5f;
+        const float IceAcceleration = 5.5f;
+        const float IceStartAcceleration = 2.8f;
+        const float IceDeceleration = 2.4f;
+        const float IceStopThreshold = 0.12f;
         const float StumbleDuration = 1f;
         const float StumbleSpeedMultiplier = 0.65f;
         const float StumbleSwayAmplitude = 0.12f;
@@ -87,11 +87,11 @@ namespace KnightRun.Player
         }
 
         bool UsesLaneMovement =>
-            phaseManager != null && phaseManager.CurrentSettings.useLaneMovement;
+            phaseManager != null && phaseManager.GameplaySettings.useLaneMovement;
 
 
         bool UsesSlideMovement =>
-            phaseManager != null && phaseManager.CurrentSettings.useSlideMovement;
+            phaseManager != null && phaseManager.GameplaySettings.useSlideMovement;
 
         void Awake()
         {
@@ -113,15 +113,15 @@ namespace KnightRun.Player
 
             if (phaseManager != null)
             {
-                phaseManager.OnPhaseChanged += HandlePhaseChanged;
-                HandlePhaseChanged(phaseManager.CurrentPhase, phaseManager.CurrentSettings);
+                phaseManager.OnGameplayPhaseChanged += HandleGameplayPhaseChanged;
+                HandleGameplayPhaseChanged(phaseManager.GameplayPhase, phaseManager.GameplaySettings);
             }
         }
 
         void OnDestroy()
         {
             if (phaseManager != null)
-                phaseManager.OnPhaseChanged -= HandlePhaseChanged;
+                phaseManager.OnGameplayPhaseChanged -= HandleGameplayPhaseChanged;
         }
 
         void Update()
@@ -249,7 +249,7 @@ namespace KnightRun.Player
             ClearStumble();
         }
 
-        void HandlePhaseChanged(RunPhase phase, RunPhaseSettings settings)
+        void HandleGameplayPhaseChanged(RunPhase phase, RunPhaseSettings settings)
         {
             SetMineCartMode(settings.useLaneMovement);
 
@@ -410,7 +410,7 @@ namespace KnightRun.Player
         {
             float speed = gameManager.CurrentSpeed;
             float phaseMultiplier = phaseManager != null
-                ? phaseManager.CurrentSettings.speedMultiplier
+                ? phaseManager.GameplaySettings.speedMultiplier
                 : 1f;
 
             Vector3 position = transform.position;
@@ -427,14 +427,30 @@ namespace KnightRun.Player
             else if (UsesSlideMovement)
             {
                 if (grounded)
+                {
                     position.x = ApplyIceMovement(position.x);
+                }
                 else
                 {
-                    iceHorizontalVelocity = 0f;
-                    position.x = Mathf.Clamp(
-                        position.x + horizontalInput * FreeMoveSpeed * Time.deltaTime,
-                        TrackMinX,
-                        TrackMaxX);
+                    // Keep ice momentum while airborne; air steering stays soft.
+                    float airControl = IceStartAcceleration * 0.55f * ChillAccelerationMultiplier;
+                    float airTarget = horizontalInput
+                        * IceMaxHorizontalSpeed
+                        * MetaBonuses.MoveSpeedMultiplier
+                        * (IsChilled ? chillMoveMultiplier : 1f);
+                    iceHorizontalVelocity = Mathf.MoveTowards(
+                        iceHorizontalVelocity,
+                        airTarget,
+                        airControl * Time.deltaTime);
+
+                    float nextX = position.x + iceHorizontalVelocity * Time.deltaTime;
+                    if (nextX <= TrackMinX || nextX >= TrackMaxX)
+                    {
+                        nextX = Mathf.Clamp(nextX, TrackMinX, TrackMaxX);
+                        iceHorizontalVelocity = 0f;
+                    }
+
+                    position.x = nextX;
                 }
             }
             else
@@ -476,19 +492,19 @@ namespace KnightRun.Player
         float ApplyIceMovement(float currentX)
         {
             float chilledMultiplier = IsChilled ? chillMoveMultiplier : 1f;
-            float targetVelocity = horizontalInput
-                * IceMaxHorizontalSpeed
-                * MetaBonuses.MoveSpeedMultiplier
-                * chilledMultiplier;
+            float maxSpeed = IceMaxHorizontalSpeed * MetaBonuses.MoveSpeedMultiplier * chilledMultiplier;
+            float targetVelocity = horizontalInput * maxSpeed;
             bool hasInput = Mathf.Abs(horizontalInput) > 0.01f;
 
             if (hasInput)
             {
-                bool startingFromRest = Mathf.Abs(iceHorizontalVelocity) < IceStopThreshold;
+                float speed = Mathf.Abs(iceHorizontalVelocity);
+                bool startingFromRest = speed < IceStopThreshold;
                 bool reversing =
-                    Mathf.Abs(iceHorizontalVelocity) > IceStopThreshold &&
+                    speed > IceStopThreshold &&
                     Mathf.Sign(horizontalInput) != Mathf.Sign(iceHorizontalVelocity);
 
+                // Ice: slow to get going / reverse; only a bit easier once already sliding that way.
                 float acceleration = (startingFromRest || reversing
                     ? IceStartAcceleration
                     : IceAcceleration) * ChillAccelerationMultiplier;
@@ -500,10 +516,14 @@ namespace KnightRun.Player
             }
             else
             {
+                // Keep coasting a good while after releasing left/right.
                 iceHorizontalVelocity = Mathf.MoveTowards(
                     iceHorizontalVelocity,
                     0f,
                     IceDeceleration * ChillAccelerationMultiplier * Time.deltaTime);
+
+                if (Mathf.Abs(iceHorizontalVelocity) < IceStopThreshold)
+                    iceHorizontalVelocity = 0f;
             }
 
             float nextX = currentX + iceHorizontalVelocity * Time.deltaTime;

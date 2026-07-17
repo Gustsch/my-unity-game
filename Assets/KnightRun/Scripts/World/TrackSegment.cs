@@ -8,6 +8,15 @@ namespace KnightRun.World
     {
         public float Length = 20f;
         public RunPhase Phase { get; private set; }
+        public RunPhaseSettings Settings => currentSettings;
+
+        public float StartZ => transform.position.z;
+        public float EndZ => transform.position.z + Length;
+
+        public bool ContainsZ(float z)
+        {
+            return z >= StartZ && z < EndZ;
+        }
 
         Transform leftWall;
         Transform rightWall;

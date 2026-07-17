@@ -16,7 +16,8 @@ namespace KnightRun.Core
         public static RunPhaseSettings GetSettings()
         {
             RunPhaseManager manager = RunPhaseManager.Instance;
-            return manager != null ? manager.CurrentSettings : RunPhaseDefaults.All[0];
+            // Movement bounds follow the biome under the player, not the world spawn phase.
+            return manager != null ? manager.GameplaySettings : RunPhaseDefaults.All[0];
         }
 
         public static float[] GetLanePositions(RunPhaseSettings settings)

@@ -59,7 +59,7 @@ namespace KnightRun.Core
             if (State != GameState.Running)
                 return;
 
-            float multiplier = phaseManager != null ? phaseManager.CurrentSettings.speedMultiplier : 1f;
+            float multiplier = phaseManager != null ? phaseManager.GameplaySettings.speedMultiplier : 1f;
             CurrentSpeed = Mathf.Min(maxSpeed, CurrentSpeed + speedRampPerSecond * Time.deltaTime);
             float delta = CurrentSpeed * multiplier * Time.deltaTime;
 

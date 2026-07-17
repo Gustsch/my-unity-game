@@ -13,6 +13,12 @@ namespace KnightRun.Gameplay
         public const int SpineCount = 3;
         public const float PhaseSpineInterval = 1.35f;
 
+        const string SmokeMaterialPath = "KnightRun/Particles/SandstormSmoke";
+        const string DustMaterialPath = "KnightRun/Particles/SandstormDust";
+
+        static readonly Color SandTint = new Color(0.86f, 0.66f, 0.36f, 0.85f);
+        static readonly Color DustTint = new Color(0.94f, 0.78f, 0.48f, 0.9f);
+
         public bool IsPhaseStorm { get; private set; }
 
         Transform player;
@@ -21,7 +27,9 @@ namespace KnightRun.Gameplay
         float spineTimer;
         float lockedX;
         int spinesSpawned;
-        Transform[] fogPanels;
+        Transform stormRoot;
+        ParticleSystem smokeParticles;
+        ParticleSystem dustParticles;
 
         public static BossSandstormAttack Spawn(Transform player)
         {
@@ -67,19 +75,13 @@ namespace KnightRun.Gameplay
             lifeTimer = phaseStorm ? float.PositiveInfinity : StormDuration;
             spineTimer = phaseStorm ? PhaseSpineInterval * 0.5f : SpineWarning;
             spinesSpawned = 0;
-            fogPanels = new Transform[4];
 
-            for (int i = 0; i < fogPanels.Length; i++)
-            {
-                var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                panel.name = $"SandFog_{i}";
-                panel.transform.SetParent(transform, false);
-                panel.transform.localScale = new Vector3(3.2f, 2.8f, 0.4f);
-                panel.GetComponent<Renderer>().sharedMaterial = KnightRunMaterials.Get(KnightRunTexture.GroundVolcano);
-                ApplyTint(panel.GetComponent<Renderer>(), new Color(0.72f, 0.55f, 0.28f, 0.7f));
-                Object.Destroy(panel.GetComponent<Collider>());
-                fogPanels[i] = panel.transform;
-            }
+            stormRoot = new GameObject("SandstormParticles").transform;
+            stormRoot.SetParent(transform, false);
+
+            smokeParticles = CreateSmokeEmitter(stormRoot);
+            dustParticles = CreateDustEmitter(stormRoot);
+            UpdateStormFollow();
         }
 
         void MakePhaseStorm(Transform playerTransform)
@@ -93,15 +95,171 @@ namespace KnightRun.Gameplay
                 spineTimer = PhaseSpineInterval;
         }
 
-        static void ApplyTint(Renderer renderer, Color color)
+        static ParticleSystem CreateSmokeEmitter(Transform parent)
         {
-            if (renderer == null)
-                return;
+            var go = new GameObject("SandSmoke");
+            go.transform.SetParent(parent, false);
 
-            Material material = renderer.material;
-            material.color = color;
-            if (material.HasProperty("_BaseColor"))
-                material.SetColor("_BaseColor", color);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.duration = 5f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(2.2f, 3.6f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(2.4f, 4.2f);
+            main.startColor = Color.white;
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            main.gravityModifier = -0.02f;
+            main.maxParticles = 80;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 18f;
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(14f, 3.2f, 10f);
+
+            var velocity = ps.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.World;
+            velocity.x = new ParticleSystem.MinMaxCurve(-5.5f, -2.5f);
+            velocity.y = new ParticleSystem.MinMaxCurve(-0.2f, 0.6f);
+            velocity.z = new ParticleSystem.MinMaxCurve(-0.4f, 0.8f);
+
+            var size = ps.sizeOverLifetime;
+            size.enabled = true;
+            size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.55f, 1f, 1.35f));
+
+            var color = ps.colorOverLifetime;
+            color.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(SandTint, 0f),
+                    new GradientColorKey(new Color(0.72f, 0.52f, 0.28f), 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.55f, 0.2f),
+                    new GradientAlphaKey(0.4f, 0.7f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            color.color = gradient;
+
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.sharedMaterial = LoadStormMaterial(SmokeMaterialPath, SandTint);
+            renderer.sortingFudge = 2f;
+
+            ps.Play(true);
+            return ps;
+        }
+
+        static ParticleSystem CreateDustEmitter(Transform parent)
+        {
+            var go = new GameObject("SandDust");
+            go.transform.SetParent(parent, false);
+
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.duration = 4f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.7f, 1.4f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(4f, 9f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.45f);
+            main.startColor = Color.white;
+            main.maxParticles = 160;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 55f;
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(12f, 2.4f, 8f);
+
+            var velocity = ps.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.World;
+            velocity.x = new ParticleSystem.MinMaxCurve(-10f, -5f);
+            velocity.y = new ParticleSystem.MinMaxCurve(-0.5f, 0.8f);
+            velocity.z = new ParticleSystem.MinMaxCurve(-1f, 2f);
+
+            var color = ps.colorOverLifetime;
+            color.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(DustTint, 0f),
+                    new GradientColorKey(new Color(0.78f, 0.58f, 0.3f), 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.85f, 0.15f),
+                    new GradientAlphaKey(0.35f, 0.75f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            color.color = gradient;
+
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.sharedMaterial = LoadStormMaterial(DustMaterialPath, DustTint);
+            renderer.sortingFudge = 1f;
+
+            ps.Play(true);
+            return ps;
+        }
+
+        static Material LoadStormMaterial(string resourcePath, Color tint)
+        {
+            Material source = Resources.Load<Material>(resourcePath);
+            if (source != null)
+            {
+                var instance = new Material(source)
+                {
+                    name = source.name + "_Runtime"
+                };
+                if (instance.HasProperty("_BaseColor"))
+                    instance.SetColor("_BaseColor", tint);
+                if (instance.HasProperty("_Color"))
+                    instance.SetColor("_Color", tint);
+                return instance;
+            }
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                ?? Shader.Find("Universal Render Pipeline/Unlit")
+                ?? Shader.Find("Sprites/Default");
+            var fallback = new Material(shader)
+            {
+                name = "SandstormFallback_Runtime",
+                color = tint
+            };
+            if (fallback.HasProperty("_BaseColor"))
+                fallback.SetColor("_BaseColor", tint);
+            if (fallback.HasProperty("_Surface"))
+                fallback.SetFloat("_Surface", 1f);
+            if (fallback.HasProperty("_SrcBlend"))
+                fallback.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            if (fallback.HasProperty("_DstBlend"))
+                fallback.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            if (fallback.HasProperty("_ZWrite"))
+                fallback.SetFloat("_ZWrite", 0f);
+            return fallback;
         }
 
         void Start()
@@ -126,7 +284,7 @@ namespace KnightRun.Gameplay
                 player = runner.transform;
             }
 
-            UpdateFog();
+            UpdateStormFollow();
             UpdateSpines();
 
             if (IsPhaseStorm)
@@ -137,17 +295,16 @@ namespace KnightRun.Gameplay
                 Destroy(gameObject);
         }
 
-        void UpdateFog()
+        void UpdateStormFollow()
         {
-            float z = player.position.z + 4f;
-            float sway = Mathf.Sin(Time.time * 2.4f) * 0.4f;
-            float[] xs = { -5.5f + sway, -2.2f - sway * 0.5f, 2.2f + sway * 0.5f, 5.5f - sway };
-            for (int i = 0; i < fogPanels.Length; i++)
-            {
-                if (fogPanels[i] == null)
-                    continue;
-                fogPanels[i].position = new Vector3(player.position.x + xs[i], 1.4f, z + i * 0.35f);
-            }
+            if (player == null || stormRoot == null)
+                return;
+
+            float sway = Mathf.Sin(Time.time * 1.8f) * 0.35f;
+            stormRoot.position = new Vector3(
+                player.position.x + sway,
+                1.2f,
+                player.position.z + 3.5f);
         }
 
         void UpdateSpines()

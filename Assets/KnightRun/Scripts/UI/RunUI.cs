@@ -88,7 +88,7 @@ namespace KnightRun.UI
             }
 
             if (phaseManager != null)
-                phaseManager.OnPhaseChanged += UpdatePhase;
+                phaseManager.OnGameplayPhaseChanged += UpdatePhase;
 
             knightHealth = FindFirstObjectByType<KnightHealth>();
             if (knightHealth != null)
@@ -155,7 +155,7 @@ namespace KnightRun.UI
             }
 
             if (phaseManager != null)
-                phaseManager.OnPhaseChanged -= UpdatePhase;
+                phaseManager.OnGameplayPhaseChanged -= UpdatePhase;
 
             if (knightHealth != null)
                 knightHealth.OnHealthChanged -= UpdateHealth;
@@ -543,7 +543,7 @@ namespace KnightRun.UI
                 UpdateHealth(knightHealth.CurrentHealth, knightHealth.MaxHealth);
 
             if (phaseManager != null)
-                UpdatePhase(phaseManager.CurrentPhase, phaseManager.CurrentSettings);
+                UpdatePhase(phaseManager.GameplayPhase, phaseManager.GameplaySettings);
         }
 
         static Text CreateText(Transform parent, string content, int fontSize, TextAnchor anchor, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition)

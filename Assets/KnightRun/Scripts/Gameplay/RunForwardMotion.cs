@@ -14,7 +14,7 @@ namespace KnightRun.Gameplay
             float phaseMultiplier = 1f;
             RunPhaseManager phaseManager = RunPhaseManager.Instance;
             if (phaseManager != null)
-                phaseMultiplier = phaseManager.CurrentSettings.speedMultiplier;
+                phaseMultiplier = phaseManager.GameplaySettings.speedMultiplier;
 
             return gameManager.CurrentSpeed * phaseMultiplier;
         }
@@ -25,7 +25,7 @@ namespace KnightRun.Gameplay
             if (phaseManager == null)
                 return 1f;
 
-            return Mathf.Max(1f, phaseManager.CurrentSettings.speedMultiplier);
+            return Mathf.Max(1f, phaseManager.GameplaySettings.speedMultiplier);
         }
 
         public static float GetScaledProjectileRange(float baseRange)
@@ -38,7 +38,7 @@ namespace KnightRun.Gameplay
             float phaseMultiplier = 1f;
             RunPhaseManager phaseManager = RunPhaseManager.Instance;
             if (phaseManager != null)
-                phaseMultiplier = phaseManager.CurrentSettings.speedMultiplier;
+                phaseMultiplier = phaseManager.GameplaySettings.speedMultiplier;
 
             return phaseMultiplier > 0f ? 1f / phaseMultiplier : 1f;
         }

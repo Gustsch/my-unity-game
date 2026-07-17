@@ -48,7 +48,7 @@ namespace KnightRun.World
             phaseManager = RunPhaseManager.Instance;
 
             if (phaseManager != null)
-                phaseManager.OnPhaseChanged += HandlePhaseChanged;
+                phaseManager.OnGameplayPhaseChanged += HandleGameplayPhaseChanged;
 
             nextSpawnZ = 0f;
             for (int i = 0; i < segmentsAhead; i++)
@@ -58,7 +58,7 @@ namespace KnightRun.World
         void OnDestroy()
         {
             if (phaseManager != null)
-                phaseManager.OnPhaseChanged -= HandlePhaseChanged;
+                phaseManager.OnGameplayPhaseChanged -= HandleGameplayPhaseChanged;
         }
 
         void Update()
@@ -67,6 +67,8 @@ namespace KnightRun.World
 
             if (player == null)
                 return;
+
+            SyncGameplayPhaseWithPlayer();
 
             while (player.transform.position.z + segmentLength * 2f > nextSpawnZ)
                 SpawnSegment();
@@ -79,6 +81,29 @@ namespace KnightRun.World
             TrackSegment oldest = activeSegments.Peek();
             if (player.transform.position.z - segmentLength > oldest.transform.position.z + segmentLength)
                 RecycleSegment();
+        }
+
+        void SyncGameplayPhaseWithPlayer()
+        {
+            if (phaseManager == null || !TryGetSegmentAtZ(player.transform.position.z, out TrackSegment segment))
+                return;
+
+            phaseManager.EnterGameplayPhase(segment.Settings);
+        }
+
+        bool TryGetSegmentAtZ(float z, out TrackSegment segment)
+        {
+            foreach (TrackSegment candidate in activeSegments)
+            {
+                if (candidate != null && candidate.ContainsZ(z))
+                {
+                    segment = candidate;
+                    return true;
+                }
+            }
+
+            segment = null;
+            return false;
         }
 
         void UpdateContinuousSpawn()
@@ -434,10 +459,8 @@ namespace KnightRun.World
             Destroy(old.gameObject);
         }
 
-        void HandlePhaseChanged(RunPhase phase, RunPhaseSettings settings)
+        void HandleGameplayPhaseChanged(RunPhase phase, RunPhaseSettings settings)
         {
-            // Keep already-built segments as the previous biome until they recycle behind the player.
-            // Only newly spawned segments ahead use the new phase visuals.
             BeginAmbientTransition(settings.ambientColor);
             UpdateDesertSandstorm(phase);
         }

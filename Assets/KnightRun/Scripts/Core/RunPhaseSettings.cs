@@ -105,7 +105,7 @@ namespace KnightRun.Core
                 wallColor = new Color(0.08f, 0.18f, 0.22f),
                 accentColor = new Color(0.35f, 0.95f, 0.90f),
                 ambientColor = new Color(0.10f, 0.28f, 0.35f),
-                speedMultiplier = 1.2f,
+                speedMultiplier = 1.08f,
                 obstacleChance = 0.7f,
                 enemySpawnMultiplier = 0.8f,
                 useLaneMovement = false,
